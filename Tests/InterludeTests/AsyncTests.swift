@@ -44,9 +44,11 @@ final class AsyncTests: InterludeTestCase {
     }
 
     func testRunFailureMappingToNilDismissesSilently() async {
-        _ = try? await Interlude.run("Loading", failure: { _ in nil }) {
-            throw SampleError()
-        }
+        _ = try? await Interlude.run(
+            "Loading",
+            failure: { _ in nil },
+            operation: { throw SampleError() }
+        )
         await clock.advance(by: 1)
         XCTAssertFalse(Interlude.isShowingHUD)
         XCTAssertTrue(haptics.played.isEmpty)
@@ -62,7 +64,7 @@ final class AsyncTests: InterludeTestCase {
         task.cancel()
         let result = await task.result
         XCTAssertTrue((try? result.get()) == nil)
-        if case .failure(let error) = result {
+        if case let .failure(error) = result {
             XCTAssertTrue(error is CancellationError)
         }
         await clock.advance(by: 1)

@@ -40,7 +40,7 @@ public extension Interlude {
         /// The user visible text, if any.
         public var text: String? {
             switch self {
-            case .success(let text), .error(let text), .info(let text), .image(_, let text):
+            case let .success(text), let .error(text), let .info(text), let .image(_, text):
                 return text
             }
         }
@@ -67,7 +67,7 @@ enum HUDMode {
 
     /// 进度限制到 `0...1`，NaN 视为 0。
     var clamped: HUDMode {
-        guard case .progress(let value, let style) = self else { return self }
+        guard case let .progress(value, style) = self else { return self }
         return .progress(HUDMode.clampProgress(value), style)
     }
 

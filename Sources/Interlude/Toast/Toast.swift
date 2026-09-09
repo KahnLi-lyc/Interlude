@@ -25,7 +25,7 @@ public extension Interlude {
                 case .top: hasher.combine(0)
                 case .center: hasher.combine(1)
                 case .bottom: hasher.combine(2)
-                case .point(let point):
+                case let .point(point):
                     hasher.combine(3)
                     hasher.combine(point.x)
                     hasher.combine(point.y)
@@ -52,7 +52,7 @@ public extension Interlude {
                 switch self {
                 case .short: return 2
                 case .long: return 3.5
-                case .seconds(let value): return value.normalizedDuration
+                case let .seconds(value): return value.normalizedDuration
                 case .persistent: return nil
                 }
             }

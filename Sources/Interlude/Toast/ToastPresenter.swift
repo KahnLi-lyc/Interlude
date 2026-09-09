@@ -60,7 +60,7 @@ final class ToastPresenter {
             } else {
                 group.queue.append(entry)
             }
-        case .stack(let maximum):
+        case let .stack(maximum):
             present(entry, in: state, group: group)
             let limit = max(1, maximum)
             while group.visible.count > limit, let oldest = group.visible.first, oldest !== entry {
@@ -94,11 +94,10 @@ final class ToastPresenter {
 
     /// HUD 覆盖层安装后调用，保证 Toast 图层始终位于 HUD 之上。
     func bringLayerToFront(in hostView: UIView) {
-        let layer: PassthroughLayerView?
-        if hostView === globalState.layer?.superview {
-            layer = globalState.layer
+        let layer: PassthroughLayerView? = if hostView === globalState.layer?.superview {
+            globalState.layer
         } else {
-            layer = localStates[ObjectIdentifier(hostView)]?.layer
+            localStates[ObjectIdentifier(hostView)]?.layer
         }
         guard let layer, layer.superview === hostView else { return }
         hostView.bringSubviewToFront(layer)
@@ -127,7 +126,7 @@ final class ToastPresenter {
     /// 当前可见的 Toast 视图（按显示顺序）。
     func visibleViews(for host: Host, position: Interlude.Toast.Position? = nil) -> [ToastView] {
         guard let state = existingState(for: host) else { return [] }
-        let groups = position.map { [state.groups[$0]].compactMap { $0 } } ?? Array(state.groups.values)
+        let groups = position.map { [state.groups[$0]].compactMap(\.self) } ?? Array(state.groups.values)
         return groups.flatMap { $0.visible.map(\.view) }
     }
 
@@ -172,7 +171,13 @@ final class ToastPresenter {
         scheduleAutoDismiss(for: entry, in: state, group: group)
     }
 
-    private func dismiss(_ entry: ToastEntry, in state: ToastHostState, group: ToastGroup, didTap: Bool, animated: Bool) {
+    private func dismiss(
+        _ entry: ToastEntry,
+        in state: ToastHostState,
+        group: ToastGroup,
+        didTap: Bool,
+        animated: Bool
+    ) {
         guard let index = group.visible.firstIndex(where: { $0.identifier == entry.identifier }) else { return }
         group.visible.remove(at: index)
         entry.dismissTask?.cancel()
@@ -219,7 +224,7 @@ final class ToastPresenter {
         guard state.groups.isEmpty else { return }
         state.layer?.removeFromSuperview()
         state.layer = nil
-        if case .view(let identifier) = state.key {
+        if case let .view(identifier) = state.key {
             localStates.removeValue(forKey: identifier)
         }
     }
@@ -239,11 +244,10 @@ final class ToastPresenter {
     }
 
     private func configureGestures(for entry: ToastEntry, position: Interlude.Toast.Position) {
-        let swipeDirections: [UISwipeGestureRecognizer.Direction]
-        switch position {
-        case .top: swipeDirections = [.up]
-        case .bottom: swipeDirections = [.down]
-        case .center, .point: swipeDirections = [.up, .down]
+        let swipeDirections: [UISwipeGestureRecognizer.Direction] = switch position {
+        case .top: [.up]
+        case .bottom: [.down]
+        case .center, .point: [.up, .down]
         }
         entry.view.configureGestures(
             tapToDismiss: configuration.toast.isTapToDismissEnabled,
@@ -267,7 +271,7 @@ final class ToastPresenter {
 
     private func announce(_ toast: Interlude.Toast) {
         guard UIAccessibility.isVoiceOverRunning else { return }
-        let text = [toast.title, toast.message].compactMap { $0 }.filter { !$0.isEmpty }.joined(separator: ", ")
+        let text = [toast.title, toast.message].compactMap(\.self).filter { !$0.isEmpty }.joined(separator: ", ")
         guard !text.isEmpty else { return }
         UIAccessibility.post(notification: .announcement, argument: text)
     }
@@ -286,16 +290,17 @@ final class ToastPresenter {
         switch host {
         case .global:
             return globalState
-        case .view(let view):
+        case let .view(view):
             let identifier = ObjectIdentifier(view)
             if let state = localStates[identifier] {
                 return state
             }
             let state = ToastHostState(key: .view(identifier), hostView: view)
             localStates[identifier] = state
-            HostLifetime.install(on: view, slot: .toast, lifetimeIdentifier: state.lifetimeIdentifier) { identifier, lifetime in
-                Runtime.shared.toasts.localHostDidEndLifetime(identifier: identifier, lifetimeIdentifier: lifetime)
-            }
+            HostLifetime
+                .install(on: view, slot: .toast, lifetimeIdentifier: state.lifetimeIdentifier) { identifier, lifetime in
+                    Runtime.shared.toasts.localHostDidEndLifetime(identifier: identifier, lifetimeIdentifier: lifetime)
+                }
             return state
         }
     }
@@ -304,18 +309,17 @@ final class ToastPresenter {
         switch host {
         case .global:
             return globalState
-        case .view(let view):
+        case let .view(view):
             return localStates[ObjectIdentifier(view)]
         }
     }
 
     private func installLayer(for state: ToastHostState) -> PassthroughLayerView? {
-        let hostView: UIView?
-        switch state.key {
+        let hostView: UIView? = switch state.key {
         case .global:
-            hostView = runtime.resolveGlobalWindow()
+            runtime.resolveGlobalWindow()
         case .view:
-            hostView = state.hostView
+            state.hostView
         }
         guard let hostView else { return nil }
 
@@ -364,13 +368,16 @@ final class ToastPresenter {
                 stack.centerYAnchor.constraint(equalTo: layer.centerYAnchor)
             ]
         case .bottom:
-            let bottom = guide.bottomAnchor.constraint(equalTo: stack.bottomAnchor, constant: inset + keyboardInset(for: state))
+            let bottom = guide.bottomAnchor.constraint(
+                equalTo: stack.bottomAnchor,
+                constant: inset + keyboardInset(for: state)
+            )
             group.bottomConstraint = bottom
             constraints += [
                 stack.centerXAnchor.constraint(equalTo: layer.centerXAnchor),
                 bottom
             ]
-        case .point(let point):
+        case let .point(point):
             constraints += [
                 stack.centerXAnchor.constraint(equalTo: layer.leadingAnchor, constant: point.x),
                 stack.centerYAnchor.constraint(equalTo: layer.topAnchor, constant: point.y)
@@ -384,7 +391,7 @@ final class ToastPresenter {
         let released = localStates.compactMap { identifier, state in
             state.hostView == nil ? (identifier, state.lifetimeIdentifier) : nil
         }
-        released.forEach { identifier, lifetime in
+        for (identifier, lifetime) in released {
             localHostDidEndLifetime(identifier: identifier, lifetimeIdentifier: lifetime)
         }
     }
@@ -434,14 +441,16 @@ final class ToastPresenter {
     @objc
     private func keyboardWillChangeFrame(_ notification: Notification) {
         guard let frame = notification.userInfo?[UIResponder.keyboardFrameEndUserInfoKey] as? CGRect else { return }
-        keyboardAnimationDuration = notification.userInfo?[UIResponder.keyboardAnimationDurationUserInfoKey] as? TimeInterval ?? 0.25
+        keyboardAnimationDuration = notification
+            .userInfo?[UIResponder.keyboardAnimationDurationUserInfoKey] as? TimeInterval ?? 0.25
         keyboardFrame = frame
         updateKeyboardInsets()
     }
 
     @objc
     private func keyboardWillHide(_ notification: Notification) {
-        keyboardAnimationDuration = notification.userInfo?[UIResponder.keyboardAnimationDurationUserInfoKey] as? TimeInterval ?? 0.25
+        keyboardAnimationDuration = notification
+            .userInfo?[UIResponder.keyboardAnimationDurationUserInfoKey] as? TimeInterval ?? 0.25
         keyboardFrame = .null
         updateKeyboardInsets()
     }
@@ -519,7 +528,13 @@ private final class ToastEntry {
     let position: Interlude.Toast.Position
     var dismissTask: Task<Void, Never>?
 
-    init(identifier: UUID, toast: Interlude.Toast, view: ToastView, duration: TimeInterval?, position: Interlude.Toast.Position) {
+    init(
+        identifier: UUID,
+        toast: Interlude.Toast,
+        view: ToastView,
+        duration: TimeInterval?,
+        position: Interlude.Toast.Position
+    ) {
         self.identifier = identifier
         self.toast = toast
         self.view = view

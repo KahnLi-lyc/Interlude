@@ -39,7 +39,12 @@ public extension Interlude {
             public var radius: CGFloat
             public var offset: CGSize
 
-            public init(color: UIColor = .black, opacity: Float = 0.2, radius: CGFloat = 8, offset: CGSize = CGSize(width: 0, height: 4)) {
+            public init(
+                color: UIColor = .black,
+                opacity: Float = 0.2,
+                radius: CGFloat = 8,
+                offset: CGSize = CGSize(width: 0, height: 4)
+            ) {
                 self.color = color
                 self.opacity = opacity
                 self.radius = radius
@@ -50,9 +55,9 @@ public extension Interlude {
         /// Toast specific visual parameters.
         public struct Toast: Sendable {
             public var background: Background = .solid(UIColor.black.withAlphaComponent(0.8))
-            public var reduceTransparencyColor: UIColor = UIColor(white: 0.1, alpha: 1)
+            public var reduceTransparencyColor: UIColor = .init(white: 0.1, alpha: 1)
             public var foregroundColor: UIColor = .white
-            public var secondaryForegroundColor: UIColor = UIColor.white.withAlphaComponent(0.8)
+            public var secondaryForegroundColor: UIColor = .white.withAlphaComponent(0.8)
             public var actionTintColor: UIColor = .systemBlue
             public var cornerRadius: CGFloat = 10
             public var messageFont: UIFont = .preferredFont(forTextStyle: .subheadline)
@@ -152,15 +157,27 @@ public extension Interlude {
         public static let automatic: Theme = {
             var theme = Theme(
                 background: .blur(.systemChromeMaterial),
-                reduceTransparencyColor: UIColor.dynamic(light: UIColor(white: 0.97, alpha: 0.98), dark: UIColor(white: 0.08, alpha: 0.96)),
-                dimmingColor: UIColor.dynamic(light: UIColor.black.withAlphaComponent(0.08), dark: UIColor.black.withAlphaComponent(0.2)),
+                reduceTransparencyColor: UIColor.dynamic(
+                    light: UIColor(white: 0.97, alpha: 0.98),
+                    dark: UIColor(white: 0.08, alpha: 0.96)
+                ),
+                dimmingColor: UIColor.dynamic(
+                    light: UIColor.black.withAlphaComponent(0.08),
+                    dark: UIColor.black.withAlphaComponent(0.2)
+                ),
                 foregroundColor: .label,
                 secondaryForegroundColor: .secondaryLabel,
                 indicatorColor: .label,
-                trackColor: UIColor.dynamic(light: UIColor(white: 0.1, alpha: 0.15), dark: UIColor.white.withAlphaComponent(0.25))
+                trackColor: UIColor.dynamic(
+                    light: UIColor(white: 0.1, alpha: 0.15),
+                    dark: UIColor.white.withAlphaComponent(0.25)
+                )
             )
             theme.toast.background = .blur(.systemChromeMaterial)
-            theme.toast.reduceTransparencyColor = UIColor.dynamic(light: UIColor(white: 0.97, alpha: 1), dark: UIColor(white: 0.1, alpha: 1))
+            theme.toast.reduceTransparencyColor = UIColor.dynamic(
+                light: UIColor(white: 0.97, alpha: 1),
+                dark: UIColor(white: 0.1, alpha: 1)
+            )
             theme.toast.foregroundColor = .label
             theme.toast.secondaryForegroundColor = .secondaryLabel
             return theme

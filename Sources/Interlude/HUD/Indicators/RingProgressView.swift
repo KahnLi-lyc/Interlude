@@ -15,7 +15,7 @@ final class RingProgressView: UIView {
         }
     }
 
-    var trackColor: UIColor = UIColor.white.withAlphaComponent(0.25) {
+    var trackColor: UIColor = .white.withAlphaComponent(0.25) {
         didSet { trackLayer.strokeColor = trackColor.cgColor }
     }
 

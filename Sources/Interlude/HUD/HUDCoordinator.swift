@@ -134,7 +134,7 @@ final class HUDCoordinator {
         entry.autoDismissTask = makeAutoDismissTask(for: token.identifier, after: request.autoDismissAfter)
         state.entries[token.identifier] = entry
 
-        if case .result(let result) = request.mode {
+        if case let .result(result) = request.mode {
             runtime.playHaptic(for: result)
         }
 
@@ -210,7 +210,10 @@ final class HUDCoordinator {
         }
         entry.progressObservation?.invalidate()
         let token = Interlude.Token(identifier: identifier, sessionGeneration: sessionGeneration)
-        entry.progressObservation = progress.observe(\.fractionCompleted, options: [.initial, .new]) { @Sendable progress, _ in
+        entry.progressObservation = progress.observe(\.fractionCompleted, options: [
+            .initial,
+            .new
+        ]) { @Sendable progress, _ in
             // KVO 回调可能来自后台线程；闭包显式 @Sendable 且只经 Token 的 nonisolated 方法切回主线程。
             token.update(progress: progress.fractionCompleted)
             if updatesDetail {
@@ -267,7 +270,7 @@ final class HUDCoordinator {
         switch host {
         case .global:
             return globalState.overlay
-        case .view(let view):
+        case let .view(view):
             return localStates[ObjectIdentifier(view)]?.overlay
         }
     }
@@ -350,7 +353,7 @@ final class HUDCoordinator {
         switch configuration.timeoutBehavior {
         case .dismiss:
             performDismiss(identifier: identifier, sessionGeneration: sessionGeneration)
-        case .error(let message):
+        case let .error(message):
             performFinish(
                 identifier: identifier,
                 sessionGeneration: sessionGeneration,
@@ -512,7 +515,7 @@ final class HUDCoordinator {
         switch key {
         case .global:
             break
-        case .view(let identifier):
+        case let .view(identifier):
             state.overlay = nil
             localStates.removeValue(forKey: identifier)
         }
@@ -576,16 +579,17 @@ final class HUDCoordinator {
         switch host {
         case .global:
             return globalState
-        case .view(let view):
+        case let .view(view):
             let identifier = ObjectIdentifier(view)
             if let state = localStates[identifier] {
                 return state
             }
             let state = HUDHostState(key: .view(identifier), hostView: view)
             localStates[identifier] = state
-            HostLifetime.install(on: view, slot: .hud, lifetimeIdentifier: state.lifetimeIdentifier) { identifier, lifetime in
-                Runtime.shared.hud.localHostDidEndLifetime(identifier: identifier, lifetimeIdentifier: lifetime)
-            }
+            HostLifetime
+                .install(on: view, slot: .hud, lifetimeIdentifier: state.lifetimeIdentifier) { identifier, lifetime in
+                    Runtime.shared.hud.localHostDidEndLifetime(identifier: identifier, lifetimeIdentifier: lifetime)
+                }
             return state
         }
     }
@@ -601,7 +605,7 @@ final class HUDCoordinator {
         switch key {
         case .global:
             return globalState
-        case .view(let identifier):
+        case let .view(identifier):
             return localStates[identifier]
         }
     }
@@ -624,7 +628,7 @@ final class HUDCoordinator {
         switch state.key {
         case .global:
             overlay.localHostExitHandler = nil
-        case .view(let identifier):
+        case let .view(identifier):
             let lifetimeIdentifier = state.lifetimeIdentifier
             overlay.localHostExitHandler = { [weak self] in
                 self?.localHostDidEndLifetime(identifier: identifier, lifetimeIdentifier: lifetimeIdentifier)
@@ -656,7 +660,7 @@ final class HUDCoordinator {
         let released = localStates.compactMap { identifier, state in
             state.hostView == nil ? (identifier, state.lifetimeIdentifier) : nil
         }
-        released.forEach { identifier, lifetime in
+        for (identifier, lifetime) in released {
             localHostDidEndLifetime(identifier: identifier, lifetimeIdentifier: lifetime)
         }
     }
@@ -664,7 +668,7 @@ final class HUDCoordinator {
     private func removeLocalStateIfIdle(_ state: HUDHostState) {
         guard state.entries.isEmpty,
               state.overlay == nil,
-              case .view(let identifier) = state.key else {
+              case let .view(identifier) = state.key else {
             return
         }
         localStates.removeValue(forKey: identifier)

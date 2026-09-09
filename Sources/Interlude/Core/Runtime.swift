@@ -29,7 +29,9 @@ final class Runtime {
     /// 返回当前全局窗口；未配置 `windowProvider` 时在 Debug 下断言。
     func resolveGlobalWindow() -> UIWindow? {
         guard let provider = configuration.windowProvider else {
-            assertionFailure("Interlude: call Interlude.configure { $0.windowProvider = … } before presenting global HUDs or toasts.")
+            assertionFailure(
+                "Interlude: call Interlude.configure { $0.windowProvider = … } before presenting global HUDs or toasts."
+            )
             return nil
         }
         return provider()

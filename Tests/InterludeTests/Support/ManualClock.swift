@@ -55,7 +55,10 @@ final class ManualClock: InterludeClock {
         // 先让刚创建的任务跑到 sleep 登记点，否则会漏掉它们。
         await Self.drain()
         let target = now + delta
-        while let next = sleepers.filter({ $0.deadline <= target }).min(by: { ($0.deadline, $0.order) < ($1.deadline, $1.order) }) {
+        while let next = sleepers.filter({ $0.deadline <= target }).min(by: { ($0.deadline, $0.order) < (
+            $1.deadline,
+            $1.order
+        ) }) {
             now = max(now, next.deadline)
             sleepers.removeAll { $0.order == next.order }
             next.continuation.resume()

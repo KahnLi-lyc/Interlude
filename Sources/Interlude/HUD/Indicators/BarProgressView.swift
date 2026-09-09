@@ -16,7 +16,7 @@ final class BarProgressView: UIView {
 
     private(set) var progress: Double = 0
 
-    var trackColor: UIColor = UIColor.white.withAlphaComponent(0.25) {
+    var trackColor: UIColor = .white.withAlphaComponent(0.25) {
         didSet { trackView.backgroundColor = trackColor }
     }
 

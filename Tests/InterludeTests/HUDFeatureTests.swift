@@ -155,9 +155,18 @@ final class HUDFeatureTests: InterludeTestCase {
     }
 
     func testLocalHostPopCleansUpAfterTransition() {
-        XCTAssertTrue(HUDView.shouldCleanupLocalHostAfterTransition(transitionWasCancelled: false, isAttachedToWindow: false))
-        XCTAssertFalse(HUDView.shouldCleanupLocalHostAfterTransition(transitionWasCancelled: true, isAttachedToWindow: false))
-        XCTAssertFalse(HUDView.shouldCleanupLocalHostAfterTransition(transitionWasCancelled: false, isAttachedToWindow: true))
+        XCTAssertTrue(HUDView.shouldCleanupLocalHostAfterTransition(
+            transitionWasCancelled: false,
+            isAttachedToWindow: false
+        ))
+        XCTAssertFalse(HUDView.shouldCleanupLocalHostAfterTransition(
+            transitionWasCancelled: true,
+            isAttachedToWindow: false
+        ))
+        XCTAssertFalse(HUDView.shouldCleanupLocalHostAfterTransition(
+            transitionWasCancelled: false,
+            isAttachedToWindow: true
+        ))
     }
 
     // MARK: - Theme
@@ -214,7 +223,10 @@ final class HUDFeatureTests: InterludeTestCase {
         let bundle = Localization.resourceBundle
         let languages = ["en", "zh-Hans", "zh-Hant", "ja", "ko", "fr", "de", "es", "pt-BR"]
         for language in languages {
-            let path = try XCTUnwrap(bundle.path(forResource: "Localizable", ofType: "strings", inDirectory: nil, forLocalization: language), language)
+            let path = try XCTUnwrap(
+                bundle.path(forResource: "Localizable", ofType: "strings", inDirectory: nil, forLocalization: language),
+                language
+            )
             let table = try XCTUnwrap(NSDictionary(contentsOfFile: path) as? [String: String], language)
             for key in Localization.Key.allCases {
                 XCTAssertNotNil(table[key.rawValue], "\(language) 缺少 \(key.rawValue)")

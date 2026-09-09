@@ -26,7 +26,7 @@ enum Host {
         switch self {
         case .global:
             return .global
-        case .view(let view):
+        case let .view(view):
             return .view(ObjectIdentifier(view))
         }
     }

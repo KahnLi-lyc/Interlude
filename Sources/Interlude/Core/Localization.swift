@@ -39,14 +39,14 @@ enum Localization {
     /// 库资源包。SwiftPM 使用 `Bundle.module`，CocoaPods 等场景回退到类所在 bundle。
     static var resourceBundle: Bundle {
         #if SWIFT_PACKAGE
-        return Bundle.module
+            return Bundle.module
         #else
-        let containing = Bundle(for: BundleLocator.self)
-        if let url = containing.url(forResource: "Interlude", withExtension: "bundle"),
-           let bundle = Bundle(url: url) {
-            return bundle
-        }
-        return containing
+            let containing = Bundle(for: BundleLocator.self)
+            if let url = containing.url(forResource: "Interlude", withExtension: "bundle"),
+               let bundle = Bundle(url: url) {
+                return bundle
+            }
+            return containing
         #endif
     }
 }

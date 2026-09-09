@@ -187,8 +187,14 @@ final class ToastView: UIView {
         NSLayoutConstraint.activate([
             contentStack.topAnchor.constraint(equalTo: effectView.contentView.topAnchor, constant: insets.top),
             effectView.contentView.bottomAnchor.constraint(equalTo: contentStack.bottomAnchor, constant: insets.bottom),
-            contentStack.leadingAnchor.constraint(equalTo: effectView.contentView.leadingAnchor, constant: insets.leading),
-            effectView.contentView.trailingAnchor.constraint(equalTo: contentStack.trailingAnchor, constant: insets.trailing)
+            contentStack.leadingAnchor.constraint(
+                equalTo: effectView.contentView.leadingAnchor,
+                constant: insets.leading
+            ),
+            effectView.contentView.trailingAnchor.constraint(
+                equalTo: contentStack.trailingAnchor,
+                constant: insets.trailing
+            )
         ])
 
         if let image = iconImage(for: toast.icon) {
@@ -227,7 +233,7 @@ final class ToastView: UIView {
     }
 
     private func setupAccessibility() {
-        let label = [toast.title, toast.message].compactMap { $0 }.filter { !$0.isEmpty }.joined(separator: ", ")
+        let label = [toast.title, toast.message].compactMap(\.self).filter { !$0.isEmpty }.joined(separator: ", ")
         if isActionButtonVisible {
             isAccessibilityElement = false
             textStack.isAccessibilityElement = true
@@ -268,10 +274,10 @@ final class ToastView: UIView {
             return
         }
         switch theme.toast.background {
-        case .blur(let style):
+        case let .blur(style):
             effectView.backgroundColor = .clear
             effectView.effect = UIBlurEffect(style: style)
-        case .solid(let color):
+        case let .solid(color):
             effectView.effect = nil
             effectView.backgroundColor = color
         }
@@ -294,9 +300,9 @@ final class ToastView: UIView {
         case .warning:
             iconImageView.tintColor = .systemOrange
             return UIImage(systemName: "exclamationmark.triangle.fill", withConfiguration: configuration)
-        case .system(let name):
+        case let .system(name):
             return UIImage(systemName: name, withConfiguration: configuration)
-        case .image(let image):
+        case let .image(image):
             return image
         }
     }

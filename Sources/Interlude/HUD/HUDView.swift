@@ -76,6 +76,8 @@ final class HUDView: UIView {
     private var stackTrailingConstraint: NSLayoutConstraint?
     private var indicatorWidthConstraint: NSLayoutConstraint?
     private var indicatorHeightConstraint: NSLayoutConstraint?
+    /// 进度条比指示器宽，bar 模式下把容器撑到进度条宽度。
+    private var barWidthConstraint: NSLayoutConstraint?
     private var customSizeConstraints: [NSLayoutConstraint] = []
 
     private let percentageFormatter: NumberFormatter = {
@@ -244,11 +246,10 @@ final class HUDView: UIView {
         cancelVisualAnimations()
         applyTheme(snapshot.theme)
 
-        let keepsProgress: Bool
-        if case .progress = previousMode, case .progress = snapshot.mode {
-            keepsProgress = true
+        let keepsProgress = if case .progress = previousMode, case .progress = snapshot.mode {
+            true
         } else {
-            keepsProgress = false
+            false
         }
         resetIndicators(resetProgress: !keepsProgress)
 
@@ -260,13 +261,20 @@ final class HUDView: UIView {
         switch snapshot.mode {
         case .loading:
             renderLoading(text: snapshot.text, previousMode: previousMode, previousText: previousText)
-        case .progress(let value, let style):
-            renderProgress(value, style: style, text: snapshot.text, animated: animated, previousMode: previousMode, previousText: previousText)
+        case let .progress(value, style):
+            renderProgress(
+                value,
+                style: style,
+                text: snapshot.text,
+                animated: animated,
+                previousMode: previousMode,
+                previousText: previousText
+            )
         case .text:
             renderTextOnly(text: snapshot.text)
-        case .custom(let view):
+        case let .custom(view):
             renderCustom(view, text: snapshot.text)
-        case .result(let result):
+        case let .result(result):
             renderResult(result)
         }
 
@@ -332,7 +340,7 @@ final class HUDView: UIView {
         contentStack.addArrangedSubview(detailLabel)
         contentStack.addArrangedSubview(cancelButton)
 
-        [activityIndicator, ringView, barView, resultImageView].forEach { view in
+        for view in [activityIndicator, ringView, barView, resultImageView] {
             indicatorContainer.addSubview(view)
             view.translatesAutoresizingMaskIntoConstraints = false
             view.isAccessibilityElement = false
@@ -368,9 +376,11 @@ final class HUDView: UIView {
         stackTrailingConstraint = stackTrailing
 
         let indicatorWidth = indicatorContainer.widthAnchor.constraint(equalToConstant: theme.indicatorSize)
+        indicatorWidth.priority = .defaultHigh
         let indicatorHeight = indicatorContainer.heightAnchor.constraint(equalToConstant: theme.indicatorSize)
         indicatorWidthConstraint = indicatorWidth
         indicatorHeightConstraint = indicatorHeight
+        barWidthConstraint = indicatorContainer.widthAnchor.constraint(greaterThanOrEqualTo: barView.widthAnchor)
 
         NSLayoutConstraint.activate([
             centerX, centerY, maxWidth, minWidth, minHeight,
@@ -380,7 +390,7 @@ final class HUDView: UIView {
             indicatorWidth, indicatorHeight
         ])
 
-        [activityIndicator, ringView, resultImageView].forEach { view in
+        for view in [activityIndicator, ringView, resultImageView] {
             NSLayoutConstraint.activate([
                 view.centerXAnchor.constraint(equalTo: indicatorContainer.centerXAnchor),
                 view.centerYAnchor.constraint(equalTo: indicatorContainer.centerYAnchor),
@@ -456,10 +466,10 @@ final class HUDView: UIView {
             return
         }
         switch theme.background {
-        case .blur(let style):
+        case let .blur(style):
             panel.backgroundColor = .clear
             panel.effect = UIBlurEffect(style: style)
-        case .solid(let color):
+        case let .solid(color):
             panel.effect = nil
             panel.backgroundColor = color
         }
@@ -478,7 +488,11 @@ final class HUDView: UIView {
         renderedMode = .loading
         renderedProgress = nil
         displayedPercentage = nil
-        configureAccessibility(label: nonempty(text) ?? Runtime.shared.string(.loading), value: nil, traits: .staticText)
+        configureAccessibility(
+            label: nonempty(text) ?? Runtime.shared.string(.loading),
+            value: nil,
+            traits: .staticText
+        )
         if previousMode != .loading || previousText != text {
             postAnnouncement(accessibilityLabel)
         }
@@ -501,21 +515,25 @@ final class HUDView: UIView {
             ringView.setProgress(value, percentageText: percentage, animated: animatesProgress)
         case .bar:
             barView.isHidden = false
+            barWidthConstraint?.isActive = true
             barView.setProgress(value, percentageText: percentage, animated: animatesProgress)
         }
         renderedMode = .progress(value, style)
         renderedProgress = value
         displayedPercentage = percentage
-        configureAccessibility(label: nonempty(text) ?? Runtime.shared.string(.loading), value: percentage, traits: .updatesFrequently)
+        configureAccessibility(
+            label: nonempty(text) ?? Runtime.shared.string(.loading),
+            value: percentage,
+            traits: .updatesFrequently
+        )
 
-        let wasProgress: Bool
-        if case .progress = previousMode {
-            wasProgress = true
+        let wasProgress = if case .progress = previousMode {
+            true
         } else {
-            wasProgress = false
+            false
         }
         if !wasProgress || previousText != text {
-            postAnnouncement([accessibilityLabel, percentage].compactMap { $0 }.joined(separator: ", "))
+            postAnnouncement([accessibilityLabel, percentage].compactMap(\.self).joined(separator: ", "))
         }
     }
 
@@ -534,7 +552,11 @@ final class HUDView: UIView {
         renderedMode = .custom
         renderedProgress = nil
         displayedPercentage = nil
-        configureAccessibility(label: nonempty(text) ?? Runtime.shared.string(.loading), value: nil, traits: .staticText)
+        configureAccessibility(
+            label: nonempty(text) ?? Runtime.shared.string(.loading),
+            value: nil,
+            traits: .staticText
+        )
         postAnnouncement(accessibilityLabel)
     }
 
@@ -546,22 +568,22 @@ final class HUDView: UIView {
 
         let label: String
         switch result {
-        case .success(let text):
+        case let .success(text):
             resultImageView.image = UIImage(systemName: "checkmark.circle.fill")
             resultImageView.tintColor = theme.successColor
             renderedMode = .success
             label = nonempty(text) ?? Runtime.shared.string(.success)
-        case .error(let text):
+        case let .error(text):
             resultImageView.image = UIImage(systemName: "xmark.circle.fill")
             resultImageView.tintColor = theme.errorColor
             renderedMode = .error
             label = nonempty(text) ?? Runtime.shared.string(.error)
-        case .info(let text):
+        case let .info(text):
             resultImageView.image = UIImage(systemName: "info.circle.fill")
             resultImageView.tintColor = theme.infoColor
             renderedMode = .info
             label = nonempty(text) ?? Runtime.shared.string(.info)
-        case .image(let image, let text):
+        case let .image(image, text):
             resultImageView.image = image
             resultImageView.tintColor = theme.foregroundColor
             renderedMode = .image
@@ -604,6 +626,7 @@ final class HUDView: UIView {
         activityIndicator.isHidden = true
         ringView.isHidden = true
         barView.isHidden = true
+        barWidthConstraint?.isActive = false
         if resetProgress {
             ringView.setProgress(0, percentageText: nil, animated: false)
             barView.setProgress(0, percentageText: nil, animated: false)

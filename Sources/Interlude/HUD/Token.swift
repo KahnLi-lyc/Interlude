@@ -40,11 +40,10 @@ public extension Interlude {
             let generation = sessionGeneration
             MainActorDispatch.runOnMainActorNowOrAsync {
                 Runtime.shared.hud.performUpdate(identifier: identifier, sessionGeneration: generation) { entry in
-                    let style: Interlude.ProgressStyle
-                    if case .progress(_, let current) = entry.mode {
-                        style = current
+                    let style: Interlude.ProgressStyle = if case let .progress(_, current) = entry.mode {
+                        current
                     } else {
-                        style = .ring
+                        .ring
                     }
                     entry.mode = .progress(progress, style).clamped
                 }
@@ -98,7 +97,12 @@ public extension Interlude {
         @MainActor
         @discardableResult
         public func observe(_ progress: Progress, updatesDetail: Bool = true) -> Token {
-            Runtime.shared.hud.observe(progress, updatesDetail: updatesDetail, identifier: identifier, sessionGeneration: sessionGeneration)
+            Runtime.shared.hud.observe(
+                progress,
+                updatesDetail: updatesDetail,
+                identifier: identifier,
+                sessionGeneration: sessionGeneration
+            )
             return self
         }
 
@@ -110,7 +114,12 @@ public extension Interlude {
         @MainActor
         @discardableResult
         public func onCancel(title: String? = nil, _ handler: @escaping @MainActor () -> Void) -> Token {
-            Runtime.shared.hud.setCancel(title: title, handler: handler, identifier: identifier, sessionGeneration: sessionGeneration)
+            Runtime.shared.hud.setCancel(
+                title: title,
+                handler: handler,
+                identifier: identifier,
+                sessionGeneration: sessionGeneration
+            )
             return self
         }
 

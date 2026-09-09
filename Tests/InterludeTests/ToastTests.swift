@@ -81,7 +81,7 @@ final class ToastTests: InterludeTestCase {
         Interlude.toast("2", duration: .persistent)
         Interlude.toast("3", duration: .persistent)
         await drain()
-        XCTAssertEqual(visibleGlobalToasts.map { $0.toast.message }, ["2", "3"])
+        XCTAssertEqual(visibleGlobalToasts.map(\.toast.message), ["2", "3"])
     }
 
     func testQueuePolicyShowsOneAtATime() async {
@@ -89,11 +89,11 @@ final class ToastTests: InterludeTestCase {
         Interlude.toast("1", duration: .seconds(1))
         Interlude.toast("2", duration: .seconds(1))
         await drain()
-        XCTAssertEqual(visibleGlobalToasts.map { $0.toast.message }, ["1"])
+        XCTAssertEqual(visibleGlobalToasts.map(\.toast.message), ["1"])
         XCTAssertEqual(runtime.toasts.queuedCount(for: .global), 1)
 
         await clock.advance(by: 1)
-        XCTAssertEqual(visibleGlobalToasts.map { $0.toast.message }, ["2"])
+        XCTAssertEqual(visibleGlobalToasts.map(\.toast.message), ["2"])
         XCTAssertEqual(runtime.toasts.queuedCount(for: .global), 0)
 
         await clock.advance(by: 1)
@@ -105,7 +105,7 @@ final class ToastTests: InterludeTestCase {
         Interlude.toast("1", duration: .persistent)
         Interlude.toast("2", duration: .persistent)
         await drain()
-        XCTAssertEqual(visibleGlobalToasts.map { $0.toast.message }, ["2"])
+        XCTAssertEqual(visibleGlobalToasts.map(\.toast.message), ["2"])
     }
 
     func testPositionsAreIndependentGroups() async {

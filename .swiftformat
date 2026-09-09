@@ -1,0 +1,17 @@
+# SwiftFormat configuration for Interlude
+--swiftversion 6.0
+--indent 4
+--maxwidth 120
+--wraparguments before-first
+--wrapparameters before-first
+--wrapcollections before-first
+--closingparen balanced
+--commas inline
+--semicolons never
+--trimwhitespace always
+--stripunusedargs closure-only
+--self remove
+--importgrouping testable-bottom
+--header strip
+--disable redundantReturn,wrapMultilineStatementBraces,blankLinesAtStartOfScope,redundantSelf
+--exclude .build,Example/InterludeExample.xcodeproj

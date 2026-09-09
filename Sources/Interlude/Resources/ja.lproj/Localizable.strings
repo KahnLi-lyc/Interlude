@@ -1,0 +1,9 @@
+/* Interlude — ja */
+
+"interlude.loading" = "読み込み中";
+"interlude.success" = "成功";
+"interlude.error" = "エラー";
+"interlude.info" = "情報";
+"interlude.timeout" = "リクエストがタイムアウトしました";
+"interlude.cancel" = "キャンセル";
+"interlude.toast.dismiss_hint" = "ダブルタップで閉じる";

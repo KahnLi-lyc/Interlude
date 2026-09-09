@@ -1,0 +1,9 @@
+/* Interlude — zh-Hant */
+
+"interlude.loading" = "載入中";
+"interlude.success" = "成功";
+"interlude.error" = "失敗";
+"interlude.info" = "提示";
+"interlude.timeout" = "請求逾時";
+"interlude.cancel" = "取消";
+"interlude.toast.dismiss_hint" = "點兩下關閉";

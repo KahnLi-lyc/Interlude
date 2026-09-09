@@ -1,0 +1,9 @@
+/* Interlude — zh-Hans */
+
+"interlude.loading" = "加载中";
+"interlude.success" = "成功";
+"interlude.error" = "失败";
+"interlude.info" = "提示";
+"interlude.timeout" = "请求超时";
+"interlude.cancel" = "取消";
+"interlude.toast.dismiss_hint" = "双击关闭";

@@ -1,0 +1,9 @@
+/* Interlude — en */
+
+"interlude.loading" = "Loading";
+"interlude.success" = "Success";
+"interlude.error" = "Error";
+"interlude.info" = "Information";
+"interlude.timeout" = "Request timed out";
+"interlude.cancel" = "Cancel";
+"interlude.toast.dismiss_hint" = "Double tap to dismiss";

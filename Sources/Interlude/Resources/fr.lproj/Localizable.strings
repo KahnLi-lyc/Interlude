@@ -1,0 +1,9 @@
+/* Interlude — fr */
+
+"interlude.loading" = "Chargement";
+"interlude.success" = "Succès";
+"interlude.error" = "Erreur";
+"interlude.info" = "Information";
+"interlude.timeout" = "La requête a expiré";
+"interlude.cancel" = "Annuler";
+"interlude.toast.dismiss_hint" = "Toucher deux fois pour fermer";

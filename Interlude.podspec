@@ -1,6 +1,6 @@
 Pod::Spec.new do |s|
   s.name             = 'Interlude'
-  s.version          = '1.0.0'
+  s.version          = '1.0.1'
   s.summary          = 'Token-driven HUD, progress and toast library for UIKit and SwiftUI, built with Swift 6.'
   s.description      = <<-DESC
     Interlude replaces the global show / hide HUD model with one token per task, so concurrent

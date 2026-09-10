@@ -4,6 +4,15 @@ All notable changes to this project are documented here. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and the project adheres to
 [Semantic Versioning](https://semver.org/).
 
+## [1.0.1] - 2026-09-09
+
+### Fixed
+
+- CI/test toolchain compatibility: the test base class no longer calls the async `super.setUp()` /
+  `super.tearDown()`, which Swift 6.1 (Xcode 16.4) rejected as sending a non-Sendable `XCTestCase`.
+  CI now pins SwiftFormat 0.58.7 / SwiftLint 0.63.2 and resolves the simulator from
+  `xcodebuild -showdestinations` with retries. No library code changed.
+
 ## [1.0.0] - 2026-09-09
 
 ### Added

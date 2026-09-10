@@ -52,8 +52,8 @@ Interlude.toast("Message sent", icon: .success)
 ### Toast
 
 - ``Interlude/toast(_:on:)``
-- ``Interlude/toast(_:icon:position:duration:on:completion:)``
-- ``Interlude/toast(_:title:icon:action:position:duration:on:completion:)``
+- ``Interlude/toast(_:icon:position:duration:animation:on:completion:)``
+- ``Interlude/toast(_:title:icon:action:position:duration:animation:on:completion:)``
 - ``Interlude/dismissAllToasts()``
 - ``Interlude/Toast``
 

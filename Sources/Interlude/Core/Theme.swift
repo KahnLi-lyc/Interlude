@@ -69,6 +69,7 @@ public extension Interlude {
             public var spacing: CGFloat = 8
             public var iconSize: CGFloat = 20
             public var shadow: Shadow? = Shadow()
+            public var animation: Interlude.Toast.Animation = .automatic
             public var animationDuration: TimeInterval = 0.2
 
             public init() {}

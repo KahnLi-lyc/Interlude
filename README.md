@@ -110,6 +110,7 @@ Interlude.custom(myAnimationView, text: "Thinking…")
 
 ```swift
 Interlude.toast("Message sent", icon: .success)
+Interlude.toast("Saved", animation: .zoom)
 
 Interlude.toast(
     "The message was removed from this chat.",
@@ -123,7 +124,7 @@ let handle = Interlude.toast("You're offline", icon: .warning, duration: .persis
 handle.dismiss()
 ```
 
-Policies (`stack(maximum:)`, `queue`, `replace`), positions (`top`, `center`, `bottom`, `point`), tap / swipe to dismiss and keyboard avoidance are configured through `Interlude.configure { $0.toast… }`.
+Policies (`stack(maximum:)`, `queue`, `replace`), positions (`top`, `center`, `bottom`, `point`), tap / swipe to dismiss and keyboard avoidance are configured through `Interlude.configure { $0.toast… }`. Per-call `animation:` overrides `theme.toast.animation` (default `.automatic`: slide at the edges, zoom in the centre).
 
 ### Local hosts
 
@@ -182,6 +183,7 @@ var theme = Interlude.Theme.dark
 theme.background = .solid(.systemIndigo)
 theme.cornerRadius = 20
 theme.animation = .zoom
+theme.toast.animation = .slide
 theme.toast.background = .blur(.systemThinMaterial)
 Interlude.theme = theme
 

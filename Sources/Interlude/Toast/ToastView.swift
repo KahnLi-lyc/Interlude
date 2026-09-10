@@ -7,6 +7,8 @@ final class ToastView: UIView {
 
     let toast: Interlude.Toast
     let theme: Interlude.Theme
+    /// `toast.animation` 与主题默认值合并后的结果，尚未按位置解析 `.automatic`。
+    let resolvedAnimation: Interlude.Toast.Animation
 
     /// 点按整体（不含按钮）时回调。
     var tapHandler: (@MainActor () -> Void)?
@@ -98,9 +100,10 @@ final class ToastView: UIView {
 
     // MARK: - Initialization
 
-    init(toast: Interlude.Toast, theme: Interlude.Theme) {
+    init(toast: Interlude.Toast, theme: Interlude.Theme, animation: Interlude.Toast.Animation) {
         self.toast = toast
         self.theme = theme
+        resolvedAnimation = animation
         super.init(frame: .zero)
         setupViews()
         setupConstraints()

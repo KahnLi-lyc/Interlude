@@ -174,4 +174,95 @@ final class ToastTests: InterludeTestCase {
         XCTAssertEqual(Interlude.Toast.Duration.seconds(-1).timeInterval, 0)
         XCTAssertNil(Interlude.Toast.Duration.persistent.timeInterval)
     }
+
+    // MARK: - Animation
+
+    func test_toast_animation_automaticResolvesByPosition() {
+        let frame = CGRect(x: 80, y: 400, width: 200, height: 40)
+        let bounds = CGRect(x: 0, y: 0, width: 390, height: 844)
+
+        let bottom = ToastTransition.resolve(
+            animation: .automatic,
+            position: .bottom,
+            viewFrame: frame,
+            layerBounds: bounds
+        )
+        XCTAssertEqual(bottom.appearing.tx, 0)
+        XCTAssertGreaterThan(bottom.appearing.ty, 0)
+        XCTAssertEqual(bottom.appearing.a, 1, accuracy: 0.001)
+        XCTAssertEqual(bottom.appearing.d, 1, accuracy: 0.001)
+
+        let top = ToastTransition.resolve(
+            animation: .automatic,
+            position: .top,
+            viewFrame: frame,
+            layerBounds: bounds
+        )
+        XCTAssertEqual(top.appearing.tx, 0)
+        XCTAssertLessThan(top.appearing.ty, 0)
+
+        let center = ToastTransition.resolve(
+            animation: .automatic,
+            position: .center,
+            viewFrame: frame,
+            layerBounds: bounds
+        )
+        XCTAssertEqual(center.appearing.a, center.appearing.d, accuracy: 0.001)
+        XCTAssertLessThan(center.appearing.a, 1)
+        XCTAssertEqual(center.appearing.tx, 0)
+        XCTAssertEqual(center.appearing.ty, 0)
+    }
+
+    func test_toast_animation_slideOffsetLeavesLayerBounds() {
+        let viewFrame = CGRect(x: 40, y: 700, width: 200, height: 44)
+        let layerBounds = CGRect(x: 0, y: 0, width: 390, height: 844)
+        let transition = ToastTransition.resolve(
+            animation: .slide,
+            position: .bottom,
+            viewFrame: viewFrame,
+            layerBounds: layerBounds
+        )
+        let moved = viewFrame.offsetBy(dx: transition.appearing.tx, dy: transition.appearing.ty)
+        XCTAssertGreaterThanOrEqual(moved.minY, layerBounds.maxY)
+    }
+
+    func test_toast_animation_reduceMotion_immediate() async {
+        Interlude.toast(
+            "Instant",
+            duration: .persistent,
+            animation: Interlude.Toast.Animation.none
+        )
+        await drain()
+        window.layoutIfNeeded()
+        runtime.toasts.layerView(for: .global)?.layoutIfNeeded()
+
+        guard let view = visibleGlobalToasts.first else {
+            return XCTFail("Expected a visible toast")
+        }
+        XCTAssertEqual(view.alpha, 1)
+        XCTAssertEqual(view.transform, .identity)
+        XCTAssertFalse(view.isHidden)
+        XCTAssertNotEqual(view.frame.size, .zero)
+        XCTAssertEqual(view.resolvedAnimation, Interlude.Toast.Animation.none)
+
+        guard let layer = runtime.toasts.layerView(for: .global) else {
+            return XCTFail("Expected a toast layer")
+        }
+        let frameInLayer = view.convert(view.bounds, to: layer)
+        XCTAssertGreaterThan(
+            frameInLayer.minY,
+            400,
+            "bottom toast should sit in the lower half, not at the overlay origin"
+        )
+    }
+
+    func test_toast_animation_perToastOverridesTheme() async {
+        var theme = Interlude.theme
+        theme.toast.animation = .fade
+        Interlude.theme = theme
+
+        Interlude.toast("Zoom", duration: .persistent, animation: .zoom)
+        await drain()
+        XCTAssertEqual(visibleGlobalToasts.first?.resolvedAnimation, .zoom)
+    }
 }

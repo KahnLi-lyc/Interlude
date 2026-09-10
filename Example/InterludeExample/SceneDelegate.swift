@@ -57,6 +57,12 @@ final class SceneDelegate: UIResponder, UIWindowSceneDelegate {
                     duration: .persistent
                 )
                 Interlude.toast("Update available", icon: .info, position: .top, duration: .persistent)
+            case "toast-bottom":
+                Interlude.toast("Message sent", duration: .persistent)
+            case "toast-center":
+                Interlude.toast("Centered", position: .center, duration: .persistent)
+            case "toast-top":
+                Interlude.toast("Saved", icon: .success, position: .top, duration: .persistent)
             default:
                 break
             }

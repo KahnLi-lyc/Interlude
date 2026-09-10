@@ -110,6 +110,7 @@ Interlude.custom(myAnimationView, text: "思考中…")
 
 ```swift
 Interlude.toast("消息已发送", icon: .success)
+Interlude.toast("已保存", animation: .zoom)
 
 Interlude.toast(
     "这条消息已从会话中移除。",
@@ -123,7 +124,7 @@ let handle = Interlude.toast("当前离线", icon: .warning, duration: .persiste
 handle.dismiss()
 ```
 
-策略（`stack(maximum:)` / `queue` / `replace`）、位置（`top` / `center` / `bottom` / `point`）、点按 / 滑动关闭与键盘避让都通过 `Interlude.configure { $0.toast… }` 配置。
+策略（`stack(maximum:)` / `queue` / `replace`）、位置（`top` / `center` / `bottom` / `point`）、点按 / 滑动关闭与键盘避让都通过 `Interlude.configure { $0.toast… }` 配置。单次传入的 `animation:` 会覆盖 `theme.toast.animation`（默认 `.automatic`：边缘滑入，中间缩放）。
 
 ### 局部宿主
 
@@ -182,6 +183,7 @@ var theme = Interlude.Theme.dark
 theme.background = .solid(.systemIndigo)
 theme.cornerRadius = 20
 theme.animation = .zoom
+theme.toast.animation = .slide
 theme.toast.background = .blur(.systemThinMaterial)
 Interlude.theme = theme
 

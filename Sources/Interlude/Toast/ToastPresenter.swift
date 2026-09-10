@@ -35,14 +35,16 @@ final class ToastPresenter {
 
         let theme = toast.theme ?? runtime.theme
         let position = toast.position ?? configuration.toast.position
+        let animation = toast.animation ?? theme.toast.animation
         let group = group(for: position, in: state, layer: layer, theme: theme)
 
         let entry = ToastEntry(
             identifier: toast.id,
             toast: toast,
-            view: ToastView(toast: toast, theme: theme),
+            view: ToastView(toast: toast, theme: theme, animation: animation),
             duration: (toast.duration ?? configuration.toast.duration).timeInterval,
-            position: position
+            position: position,
+            animation: animation
         )
         configureGestures(for: entry, position: position)
         wireHandlers(for: entry)
@@ -143,28 +145,41 @@ final class ToastPresenter {
     private func present(_ entry: ToastEntry, in state: ToastHostState, group: ToastGroup) {
         group.visible.append(entry)
         let view = entry.view
-        view.isHidden = true
         view.alpha = 0
-        group.stack.addArrangedSubview(view)
-        if let layer = state.layer {
-            view.widthAnchor.constraint(
-                lessThanOrEqualTo: layer.widthAnchor,
-                multiplier: view.theme.toast.maximumWidthRatio
-            ).isActive = true
+
+        let siblings = group.stack.arrangedSubviews
+        let oldFrames = siblings.map(\.frame)
+
+        UIView.performWithoutAnimation {
+            group.stack.addArrangedSubview(view)
+            if let layer = state.layer {
+                view.widthAnchor.constraint(
+                    lessThanOrEqualTo: layer.widthAnchor,
+                    multiplier: view.theme.toast.maximumWidthRatio
+                ).isActive = true
+            }
+            (state.layer ?? group.stack).layoutIfNeeded()
         }
 
-        let animated = !UIAccessibility.isReduceMotionEnabled
-        let offset = entranceOffset(for: entry.position)
-        view.transform = animated ? CGAffineTransform(translationX: offset.x, y: offset.y) : .identity
+        let animated = shouldAnimate(entry.animation)
+        if animated {
+            applyAppearingTransforms(
+                to: view,
+                siblings: siblings,
+                oldFrames: oldFrames,
+                entry: entry,
+                in: state
+            )
+        }
+
         UIView.animate(
             withDuration: animated ? view.theme.toast.animationDuration : 0,
             delay: 0,
             options: [.curveEaseOut, .beginFromCurrentState]
         ) {
-            view.isHidden = false
             view.alpha = 1
             view.transform = .identity
-            group.stack.layoutIfNeeded()
+            siblings.forEach { $0.transform = .identity }
         }
 
         announce(entry.toast)
@@ -185,28 +200,48 @@ final class ToastPresenter {
 
         let view = entry.view
         view.isUserInteractionEnabled = false
+
         let finish: @MainActor () -> Void = { [weak self] in
             view.removeFromSuperview()
             entry.toast.completion?(didTap)
             self?.presentNextIfNeeded(in: state, group: group)
         }
 
-        guard animated, !UIAccessibility.isReduceMotionEnabled else {
+        let shouldPlayMotion = animated && shouldAnimate(entry.animation)
+        guard shouldPlayMotion else {
             view.isHidden = true
             finish()
             return
         }
+
+        let transition = transition(for: entry, view: view, in: state)
         UIView.animate(
             withDuration: view.theme.toast.animationDuration,
             delay: 0,
             options: [.curveEaseIn, .beginFromCurrentState],
             animations: {
                 view.alpha = 0
-                view.isHidden = true
-                group.stack.layoutIfNeeded()
+                view.transform = transition.disappearing
             },
             completion: { _ in
-                finish()
+                // 先从 stack 折叠占位，再回调 / 展示下一条，避免 queue 时新旧视图叠在一起。
+                view.isHidden = true
+                let hasSiblings = !group.visible.isEmpty
+                if hasSiblings {
+                    UIView.animate(
+                        withDuration: view.theme.toast.animationDuration,
+                        delay: 0,
+                        options: [.curveEaseIn, .beginFromCurrentState],
+                        animations: {
+                            group.stack.layoutIfNeeded()
+                        },
+                        completion: { _ in
+                            finish()
+                        }
+                    )
+                } else {
+                    finish()
+                }
             }
         )
     }
@@ -276,12 +311,36 @@ final class ToastPresenter {
         UIAccessibility.post(notification: .announcement, argument: text)
     }
 
-    private func entranceOffset(for position: Interlude.Toast.Position) -> CGPoint {
-        switch position {
-        case .top: return CGPoint(x: 0, y: -12)
-        case .bottom: return CGPoint(x: 0, y: 12)
-        case .center, .point: return .zero
+    private func shouldAnimate(_ animation: Interlude.Toast.Animation) -> Bool {
+        animation != .none && !UIAccessibility.isReduceMotionEnabled
+    }
+
+    private func applyAppearingTransforms(
+        to view: ToastView,
+        siblings: [UIView],
+        oldFrames: [CGRect],
+        entry: ToastEntry,
+        in state: ToastHostState
+    ) {
+        for (sibling, oldFrame) in zip(siblings, oldFrames) {
+            let deltaY = oldFrame.minY - sibling.frame.minY
+            if deltaY != 0 {
+                sibling.transform = CGAffineTransform(translationX: 0, y: deltaY)
+            }
         }
+        view.transform = transition(for: entry, view: view, in: state).appearing
+    }
+
+    private func transition(for entry: ToastEntry, view: UIView, in state: ToastHostState) -> ToastTransition {
+        let layer = state.layer
+        let viewFrame = view.convert(view.bounds, to: layer)
+        let layerBounds = layer?.bounds ?? view.bounds
+        return ToastTransition.resolve(
+            animation: entry.animation,
+            position: entry.position,
+            viewFrame: viewFrame,
+            layerBounds: layerBounds
+        )
     }
 
     // MARK: 宿主与图层
@@ -514,6 +573,7 @@ private final class ToastGroup {
         stack.axis = .vertical
         stack.alignment = .center
         stack.spacing = spacing
+        stack.clipsToBounds = false
     }
 }
 
@@ -526,6 +586,7 @@ private final class ToastEntry {
     let view: ToastView
     let duration: TimeInterval?
     let position: Interlude.Toast.Position
+    let animation: Interlude.Toast.Animation
     var dismissTask: Task<Void, Never>?
 
     init(
@@ -533,12 +594,14 @@ private final class ToastEntry {
         toast: Interlude.Toast,
         view: ToastView,
         duration: TimeInterval?,
-        position: Interlude.Toast.Position
+        position: Interlude.Toast.Position,
+        animation: Interlude.Toast.Animation
     ) {
         self.identifier = identifier
         self.toast = toast
         self.view = view
         self.duration = duration
         self.position = position
+        self.animation = animation
     }
 }

@@ -6,6 +6,25 @@ public extension Interlude {
     struct Toast: Identifiable, Equatable {
         // MARK: - Types
 
+        /// How a toast appears and disappears.
+        public enum Animation: Sendable, Equatable {
+            /// Slide from the matching edge for ``Position/top`` and ``Position/bottom``;
+            /// ``Position/center`` and ``Position/point(_:)`` use ``zoom``.
+            case automatic
+
+            /// Slide in from the matching edge. Centre and point toasts fade in with a short lift.
+            case slide
+
+            /// Opacity only.
+            case fade
+
+            /// Opacity plus scale: grows in from 0.85× and shrinks out to 0.85×.
+            case zoom
+
+            /// No animation.
+            case none
+        }
+
         /// Where the toast is anchored inside its host.
         public enum Position: Hashable, Sendable {
             /// Below the top safe area.
@@ -135,6 +154,11 @@ public extension Interlude {
         public var position: Position?
         /// `nil` uses ``Interlude/ToastDefaults/duration``.
         public var duration: Duration?
+        /// `nil` uses the current theme's toast animation.
+        ///
+        /// Pass ``Animation/none`` as `Interlude.Toast.Animation.none`; a bare `.none` is `nil`
+        /// and therefore falls back to the theme.
+        public var animation: Animation?
         public var action: Action?
         /// `nil` uses ``Interlude/theme``.
         public var theme: Theme?
@@ -151,6 +175,7 @@ public extension Interlude {
             icon: Icon = .none,
             position: Position? = nil,
             duration: Duration? = nil,
+            animation: Animation? = nil,
             action: Action? = nil,
             theme: Theme? = nil,
             completion: (@MainActor (_ didTap: Bool) -> Void)? = nil
@@ -161,6 +186,7 @@ public extension Interlude {
             self.icon = icon
             self.position = position
             self.duration = duration
+            self.animation = animation
             self.action = action
             self.theme = theme
             self.completion = completion
@@ -171,10 +197,18 @@ public extension Interlude {
             _ view: UIView,
             position: Position? = nil,
             duration: Duration? = nil,
+            animation: Animation? = nil,
             theme: Theme? = nil,
             completion: (@MainActor (_ didTap: Bool) -> Void)? = nil
         ) -> Toast {
-            var toast = Toast("", position: position, duration: duration, theme: theme, completion: completion)
+            var toast = Toast(
+                "",
+                position: position,
+                duration: duration,
+                animation: animation,
+                theme: theme,
+                completion: completion
+            )
             toast.message = nil
             toast.customView = view
             return toast

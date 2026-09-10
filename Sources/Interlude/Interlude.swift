@@ -229,6 +229,8 @@ public enum Interlude {
     ///   - icon: Optional leading icon.
     ///   - position: Overrides ``ToastDefaults/position``.
     ///   - duration: Overrides ``ToastDefaults/duration``.
+    ///   - animation: Overrides the theme's toast animation. Pass `Interlude.Toast.Animation.none`
+    ///     to disable motion; a bare `.none` is treated as `nil`.
     ///   - host: A view to attach to. `nil` uses the global window.
     ///   - completion: Called when the toast disappears; `didTap` is `true` for taps.
     @MainActor
@@ -238,11 +240,19 @@ public enum Interlude {
         icon: Toast.Icon = .none,
         position: Toast.Position? = nil,
         duration: Toast.Duration? = nil,
+        animation: Toast.Animation? = nil,
         on host: UIView? = nil,
         completion: (@MainActor (_ didTap: Bool) -> Void)? = nil
     ) -> Toast.Handle {
         toast(
-            Toast(message, icon: icon, position: position, duration: duration, completion: completion),
+            Toast(
+                message,
+                icon: icon,
+                position: position,
+                duration: duration,
+                animation: animation,
+                completion: completion
+            ),
             on: host
         )
     }
@@ -257,6 +267,7 @@ public enum Interlude {
         action: Toast.Action?,
         position: Toast.Position? = nil,
         duration: Toast.Duration? = nil,
+        animation: Toast.Animation? = nil,
         on host: UIView? = nil,
         completion: (@MainActor (_ didTap: Bool) -> Void)? = nil
     ) -> Toast.Handle {
@@ -267,6 +278,7 @@ public enum Interlude {
                 icon: icon,
                 position: position,
                 duration: duration,
+                animation: animation,
                 action: action,
                 completion: completion
             ),

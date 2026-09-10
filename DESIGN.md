@@ -223,6 +223,7 @@ DetailView()
 | `Interlude.Token` | `final class, Sendable` | HUD 任务句柄 |
 | `Interlude.Toast` | `struct` | Toast 内容模型 |
 | `Interlude.Toast.Position` | `enum` | `.top / .center / .bottom / .point(CGPoint)` |
+| `Interlude.Toast.Animation` | `enum` | `.automatic / .slide / .fade / .zoom / .none` |
 | `Interlude.Toast.Duration` | `enum` | `.short(2s) / .long(3.5s) / .seconds(TimeInterval) / .persistent` |
 | `Interlude.Toast.Icon` | `enum` | `.none / .success / .error / .info / .warning / .system(String) / .image(UIImage)` |
 | `Interlude.Toast.Action` | `struct` | 按钮标题 + MainActor 回调 |
@@ -508,7 +509,7 @@ func onTimeout(_ handler: @escaping @MainActor () -> Void) -> Token
 | `animationDuration` | `TimeInterval` | 0.15 |
 | `toast` | `Theme.Toast` | 见下 |
 
-`Theme.Toast` 字段：`background`（`.solid(black 80%)`）、`foregroundColor`、`secondaryForegroundColor`、`cornerRadius`（10）、`messageFont`、`titleFont`、`contentInsets`（`(10, 14, 10, 14)`）、`maximumWidthRatio`（0.8）、`edgeInset`（16，距屏幕边缘 / 安全区）、`spacing`（8）、`shadow`（可选 `Shadow` 值类型）、`iconSize`（20）、`actionTintColor`。
+`Theme.Toast` 字段：`background`（`.solid(black 80%)`）、`foregroundColor`、`secondaryForegroundColor`、`cornerRadius`（10）、`messageFont`、`titleFont`、`contentInsets`（`(10, 14, 10, 14)`）、`maximumWidthRatio`（0.8）、`edgeInset`（16，距屏幕边缘 / 安全区）、`spacing`（8）、`shadow`（可选 `Shadow` 值类型）、`iconSize`（20）、`actionTintColor`、`animation`（`.automatic`）。
 
 `.light` 为反色版本：`.blur(.systemChromeMaterialLight)`、深色前景。`.automatic` 各字段使用 `UIColor { traits in … }` 动态色，背景 `.blur(.systemChromeMaterial)`。
 
@@ -528,7 +529,19 @@ func onTimeout(_ handler: @escaping @MainActor () -> Void) -> Token
 | `.zoomOut` | scale 1.3→1 | scale 1→1.3 |
 | `.none` | 立即 | 立即 |
 
-Reduce Motion 开启时全部退化为 `.none`。Toast 固定使用「淡入 + 沿位置方向 8pt 位移」。
+Reduce Motion 开启时 HUD 与 Toast 全部退化为 `.none`。
+
+`Toast.Animation`（`theme.toast.animation`，默认 `.automatic`；单条 Toast 可覆盖）：
+
+| 类型 | 出现 | 消失 |
+| --- | --- | --- |
+| `.automatic` | top / bottom 按 `.slide`；center / point 按 `.zoom` | 同出现方向反向 |
+| `.slide` | 从对应边缘外滑入并淡入；center / point 为 fade + 上浮 8pt | 沿同方向滑出并淡出 |
+| `.fade` | alpha 0→1 | alpha 1→0 |
+| `.zoom` | alpha + scale 0.85→1 | alpha + scale 1→0.85 |
+| `.none` | 立即 | 立即 |
+
+布局在动画开始前完成，出入场只动画 `alpha` 与 `transform`，避免从图层原点飞入。
 
 **验收标准**
 
@@ -580,6 +593,7 @@ Reduce Motion 开启时全部退化为 `.none`。Toast 固定使用「淡入 + �
 **行为**
 
 - 位置：`.top` 贴安全区顶部 + `edgeInset`；`.bottom` 贴安全区底部 + `edgeInset`，键盘弹出时上移到键盘之上；`.center` 居中；`.point` 以中心点定位。
+- 动画：`Toast.Animation`，默认 `.automatic`（top / bottom 从对应边缘滑入，center / point 缩放）；单条可覆盖；Reduce Motion 退化为 `.none`。
 - 内容：`icon`（左）、`title`（粗体，可选）、`message`（必填）、`action` 按钮（右，可选）。
 - 策略（按宿主 + 位置分组）：
   - `.stack(maximum:)`：同位置多条同时显示，新条目按方向追加（top 向下、bottom 向上），超出 maximum 时最早一条立即移除。
@@ -597,7 +611,8 @@ Reduce Motion 开启时全部退化为 `.none`。Toast 固定使用「淡入 + �
 @MainActor @discardableResult
 static func toast(_ message: String, title: String? = nil, icon: Toast.Icon = .none,
                   position: Toast.Position? = nil, duration: Toast.Duration? = nil,
-                  action: Toast.Action? = nil, theme: Theme? = nil, on host: UIView? = nil,
+                  animation: Toast.Animation? = nil, action: Toast.Action? = nil,
+                  theme: Theme? = nil, on host: UIView? = nil,
                   completion: (@MainActor (_ didTap: Bool) -> Void)? = nil) -> Toast.Handle
 
 @MainActor @discardableResult
@@ -605,7 +620,8 @@ static func toast(_ toast: Toast, on host: UIView? = nil) -> Toast.Handle
 
 @MainActor @discardableResult
 static func toast(custom view: UIView, position: Toast.Position? = nil,
-                  duration: Toast.Duration? = nil, on host: UIView? = nil,
+                  duration: Toast.Duration? = nil, animation: Toast.Animation? = nil,
+                  on host: UIView? = nil,
                   completion: (@MainActor (Bool) -> Void)? = nil) -> Toast.Handle
 
 nonisolated static func dismissAllToasts()
@@ -636,6 +652,8 @@ public final class Toast.Handle: Sendable {
 - AC-14-8 HUD blocking 时 Toast 仍能接收点按。
 - AC-14-9 `dismissAllToasts()` 后可见数为 0 且队列清空。
 - AC-14-10 空内容 Toast 不创建视图。
+- AC-14-11 `.automatic` 在 `.bottom` 解析为 slide（纯平移 ty > 0），在 `.center` 解析为 zoom（等比缩放 < 1）。
+- AC-14-12 `.none`（及 Reduce Motion）下 present 后立即 `alpha == 1`、`transform == .identity`、`frame.size != .zero`。
 
 ### 4.15 async 语法糖
 
@@ -802,6 +820,7 @@ static func run<T: Sendable>(
 | AC-12-1…3 | `test_a11y_loadingDefaultLabel` / `test_a11y_progressValue` / `test_a11y_blockingIsModal` |
 | AC-13-1…2 | `test_strings_override_appliedToA11y` / `test_localization_allLprojKeysMatch` |
 | AC-14-1…10 | `test_toast_stackMaximum_evictsOldest` / `test_toast_queue_sequential` / `test_toast_replace_onlyLatest` / `test_toast_persistent_untilHandleDismiss` / `test_toast_completion_didTap` / `test_toast_action_invokesAndDismisses` / `test_toast_keyboard_bottomAvoids` / `test_toast_tappableWhileHUDBlocking` / `test_dismissAllToasts_clearsQueue` / `test_toast_emptyContent_ignored` |
+| AC-14-11…12 | `test_toast_animation_automaticResolvesByPosition` / `test_toast_animation_slideOffsetLeavesLayerBounds` / `test_toast_animation_reduceMotion_immediate` / `test_toast_animation_perToastOverridesTheme` |
 | AC-15-1…4 | `test_run_success_dismisses` / `test_run_failure_showsErrorAndRethrows` / `test_run_cancellation_dismissesSilently` / `test_run_cancellable_cancelsTask` |
 | AC-16-1…3 | `test_swiftUI_isPresentedToggle_dismisses` / `test_swiftUI_host_usesLocalHost` / `test_swiftUI_viewRemoved_dismisses` |
 | AC-17-1…2 | `test_dismissAll_keepsToasts` / `test_dismissAllToasts_keepsHUD` |

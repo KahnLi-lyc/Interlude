@@ -203,6 +203,11 @@ final class DemoListViewController: UITableViewController {
             Demo(title: "Center", subtitle: "Toast at the centre") { _ in
                 Interlude.toast("Centered", position: .center)
             },
+            Demo(title: "Animations", subtitle: "slide / fade / zoom") { _ in
+                Interlude.toast("Slide from the bottom", position: .bottom, animation: .slide)
+                Interlude.toast("Fade at the top", position: .top, animation: .fade)
+                Interlude.toast("Zoom in the centre", position: .center, animation: .zoom)
+            },
             Demo(title: "Custom view", subtitle: "Toast.custom(view)") { _ in
                 let label = UILabel()
                 label.text = "🎉 Custom toast"
@@ -247,7 +252,7 @@ final class DemoListViewController: UITableViewController {
         Section(title: "async / await", demos: [
             Demo(title: "Interlude.run success", subtitle: "Result shown after the operation") { _ in
                 Task {
-                    try await Interlude.run("Syncing", success: "Synced") {
+                    try? await Interlude.run("Syncing", success: "Synced") {
                         try await Task.sleep(nanoseconds: 1_200_000_000)
                     }
                 }

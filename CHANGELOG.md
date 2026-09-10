@@ -6,6 +6,18 @@ All notable changes to this project are documented here. The format follows
 
 ## [Unreleased]
 
+## [1.1.0] - 2026-09-10
+
+### Added
+
+- `Interlude.Toast.Animation` (`.automatic`, `.slide`, `.fade`, `.zoom`, `.none`) with a theme default
+  (`Theme.Toast.animation`) and a per-toast override.
+
+### Fixed
+
+- Toast appearance no longer animates from the overlay origin. Layout is resolved first, so top
+  and bottom toasts slide from the matching edge and centre toasts zoom in place.
+
 ### Removed
 
 - CocoaPods support (`Interlude.podspec`). Interlude is distributed via Swift Package Manager only.

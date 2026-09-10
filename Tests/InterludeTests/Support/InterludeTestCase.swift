@@ -27,8 +27,9 @@ class InterludeTestCase: XCTestCase {
 
     // MARK: - Lifecycle
 
+    // 不调用 `super.setUp()`：XCTestCase 的异步版本默认为空实现，而 Swift 6.1 会把该调用
+    // 判定为跨隔离发送非 Sendable 的 XCTestCase（6.2 已修复）。
     override func setUp() async throws {
-        try await super.setUp()
         UIView.setAnimationsEnabled(false)
         clock = ManualClock()
         haptics = RecordingHaptics()
@@ -51,7 +52,6 @@ class InterludeTestCase: XCTestCase {
         clock = nil
         haptics = nil
         UIView.setAnimationsEnabled(true)
-        try await super.tearDown()
     }
 
     // MARK: - Helpers

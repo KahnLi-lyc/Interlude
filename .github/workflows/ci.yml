@@ -9,6 +9,10 @@ concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
+env:
+  SWIFTFORMAT_VERSION: 0.58.7
+  SWIFTLINT_VERSION: 0.63.2
+
 jobs:
   test:
     name: Build & Test (iOS Simulator)
@@ -16,18 +20,23 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Select Xcode
-        run: sudo xcode-select -s /Applications/Xcode_16.2.app
-
       - name: Show toolchain
         run: |
           xcodebuild -version
           swift --version
 
+      # 只从 xcodebuild 认可的目的地里选，避免选中未安装运行时的模拟器。
       - name: Resolve simulator
         id: sim
         run: |
-          UDID=$(xcrun simctl list devices available -j | python3 -c "import sys, json; d = json.load(sys.stdin)['devices']; ids = [dev['udid'] for rt, devs in d.items() if 'iOS' in rt for dev in devs if 'iPhone' in dev['name']]; print(ids[-1])")
+          DEST=$(xcodebuild -scheme Interlude -showdestinations 2>/dev/null \
+            | grep "platform:iOS Simulator" \
+            | grep "name:iPhone" \
+            | grep -v "placeholder" \
+            | head -1)
+          echo "Using: $DEST"
+          UDID=$(echo "$DEST" | sed -E 's/.*id:([0-9A-F-]+).*/\1/')
+          test -n "$UDID"
           echo "udid=$UDID" >> "$GITHUB_OUTPUT"
 
       - name: Build & test
@@ -45,9 +54,22 @@ jobs:
     runs-on: macos-15
     steps:
       - uses: actions/checkout@v4
-      - name: Install tools
-        run: brew install swiftlint swiftformat
+
+      # 固定与本地一致的版本，避免新版规则差异导致 CI 与本地结果不同。
+      - name: Install pinned tools
+        run: |
+          mkdir -p "$HOME/tools" && cd "$HOME/tools"
+          curl -sSL -o swiftformat.zip \
+            "https://github.com/nicklockwood/SwiftFormat/releases/download/${SWIFTFORMAT_VERSION}/swiftformat.zip"
+          unzip -q -o swiftformat.zip
+          curl -sSL -o swiftlint.zip \
+            "https://github.com/realm/SwiftLint/releases/download/${SWIFTLINT_VERSION}/portable_swiftlint.zip"
+          unzip -q -o swiftlint.zip
+          chmod +x swiftformat swiftlint
+          echo "$HOME/tools" >> "$GITHUB_PATH"
+
       - name: SwiftFormat (lint)
-        run: swiftformat --lint .
+        run: swiftformat --version && swiftformat --lint .
+
       - name: SwiftLint
-        run: swiftlint --strict
+        run: swiftlint version && swiftlint --strict

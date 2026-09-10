@@ -32,7 +32,7 @@ It replaces the "show / hide singleton" model of `SVProgressHUD` and `MBProgress
 
 ## Installation
 
-### Swift Package Manager
+Interlude is distributed via Swift Package Manager only.
 
 ```swift
 dependencies: [
@@ -41,12 +41,6 @@ dependencies: [
 ```
 
 Or in Xcode: **File ▸ Add Package Dependencies…** and paste the URL.
-
-### CocoaPods
-
-```ruby
-pod 'Interlude', '~> 1.0'
-```
 
 ## Quick start
 

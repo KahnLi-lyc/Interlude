@@ -32,7 +32,7 @@
 
 ## 安装
 
-### Swift Package Manager
+Interlude 仅通过 Swift Package Manager 分发。
 
 ```swift
 dependencies: [
@@ -41,12 +41,6 @@ dependencies: [
 ```
 
 或在 Xcode 中 **File ▸ Add Package Dependencies…** 粘贴仓库地址。
-
-### CocoaPods
-
-```ruby
-pod 'Interlude', '~> 1.0'
-```
 
 ## 快速开始
 

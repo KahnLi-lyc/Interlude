@@ -36,7 +36,7 @@ enum Localization {
         return resourceBundle.localizedString(forKey: key.rawValue, value: key.fallback, table: nil)
     }
 
-    /// 库资源包。SwiftPM 使用 `Bundle.module`，CocoaPods 等场景回退到类所在 bundle。
+    /// 库资源包。SwiftPM 使用 `Bundle.module`；直接把源码拖入工程等非 SwiftPM 场景回退到类所在 bundle。
     static var resourceBundle: Bundle {
         #if SWIFT_PACKAGE
             return Bundle.module

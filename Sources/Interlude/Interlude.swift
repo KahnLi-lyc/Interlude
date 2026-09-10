@@ -77,6 +77,7 @@ public enum Interlude {
     /// - Parameters:
     ///   - value: Initial progress in `0...1`.
     ///   - style: Ring or bar.
+    ///   - fill: Solid or gradient. `nil` uses ``Theme/progressFill``.
     ///   - text: Optional primary text.
     ///   - detail: Optional secondary text.
     ///   - host: A view to attach to. `nil` uses the global window.
@@ -88,6 +89,7 @@ public enum Interlude {
     public static func progress(
         _ value: Double = 0,
         style: ProgressStyle = .ring,
+        fill: ProgressFill? = nil,
         text: String? = nil,
         detail: String? = nil,
         on host: UIView? = nil,
@@ -102,7 +104,7 @@ public enum Interlude {
                 text: text,
                 detail: detail,
                 interaction: interaction,
-                theme: theme,
+                theme: themeApplyingFill(fill, to: theme),
                 timeout: timeout
             )
         )
@@ -114,6 +116,7 @@ public enum Interlude {
     public static func progress(
         _ progress: Progress,
         style: ProgressStyle = .ring,
+        fill: ProgressFill? = nil,
         text: String? = nil,
         on host: UIView? = nil,
         interaction: Interaction = .blocking,
@@ -123,6 +126,7 @@ public enum Interlude {
         let token = Self.progress(
             progress.fractionCompleted,
             style: style,
+            fill: fill,
             text: text,
             on: host,
             interaction: interaction,
@@ -290,5 +294,16 @@ public enum Interlude {
     @MainActor
     public static func dismissAllToasts() {
         Runtime.shared.toasts.performDismissAll()
+    }
+
+    // MARK: - Theme helpers
+
+    /// `fill` 覆盖写入该次主题副本；两者都缺省时仍返回 nil，让 Coordinator 用全局主题。
+    @MainActor
+    static func themeApplyingFill(_ fill: ProgressFill?, to theme: Theme?) -> Theme? {
+        guard let fill else { return theme }
+        var resolved = theme ?? Self.theme
+        resolved.progressFill = fill
+        return resolved
     }
 }

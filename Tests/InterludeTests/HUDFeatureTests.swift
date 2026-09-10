@@ -203,46 +203,62 @@ final class HUDFeatureTests: InterludeTestCase {
     }
 
     func test_theme_indicatorSize_appliedToContainer() async {
-        XCTAssertEqual(Interlude.Theme.dark.indicatorSize, 52)
-        XCTAssertEqual(Interlude.Theme.dark.ringLineWidth, 5)
-        XCTAssertEqual(Interlude.Theme.dark.minimumSize, CGSize(width: 96, height: 96))
-        XCTAssertTrue(Interlude.Theme.dark.usesProgressGradient)
-        XCTAssertTrue(Interlude.Theme.light.usesProgressGradient)
-        XCTAssertTrue(Interlude.Theme.automatic.usesProgressGradient)
+        XCTAssertEqual(Interlude.Theme.dark.indicatorSize, 80)
+        XCTAssertEqual(Interlude.Theme.dark.ringLineWidth, 8)
+        XCTAssertEqual(Interlude.Theme.dark.minimumSize, CGSize(width: 128, height: 128))
+        XCTAssertEqual(Interlude.Theme.dark.cornerRadius, 16)
+        XCTAssertEqual(Interlude.Theme.dark.progressFill, .solid)
+        XCTAssertFalse(Interlude.Theme.dark.usesProgressGradient)
+        XCTAssertFalse(Interlude.Theme.light.usesProgressGradient)
+        XCTAssertFalse(Interlude.Theme.automatic.usesProgressGradient)
 
-        Interlude.progress(0.5)
+        // 约束常量正确不等于布局正确：菊花 hugging 750 曾把容器压成标签宽度，必须断言真实尺寸。
+        Interlude.progress(0.5, text: "Uploading", detail: "50 / 100")
         await clock.advance(by: 0.2)
         window.layoutIfNeeded()
-        XCTAssertEqual(globalOverlay?.indicatorSizeConstant, 52)
+        XCTAssertEqual(globalOverlay?.indicatorSizeConstant, 80)
+        XCTAssertEqual(globalOverlay?.laidOutIndicatorSize, CGSize(width: 80, height: 80))
 
         var theme = Interlude.Theme.dark
-        theme.indicatorSize = 64
+        theme.indicatorSize = 96
         Interlude.progress(0.5, theme: theme)
         await clock.advance(by: 0.2)
         window.layoutIfNeeded()
-        XCTAssertEqual(globalOverlay?.indicatorSizeConstant, 64)
+        XCTAssertEqual(globalOverlay?.indicatorSizeConstant, 96)
+        XCTAssertEqual(globalOverlay?.laidOutIndicatorSize, CGSize(width: 96, height: 96))
     }
 
-    func test_theme_progressGradient_twoColors_drawsGradient() async {
-        var theme = Interlude.Theme.dark
-        theme.progressGradient = [.white, .systemCyan]
-        Interlude.progress(0.5, theme: theme)
+    func test_theme_progressFill_gradient_drawsGradient() async {
+        Interlude.progress(0.5, fill: .gradient)
         await clock.advance(by: 0.2)
         XCTAssertEqual(globalOverlay?.ringUsesGradient, true)
+        // 兜底色带两端必须不透明，否则弧线开头透出轨道颜色显得发暗。
+        for color in globalOverlay?.ringGradientColors ?? [] {
+            XCTAssertEqual(color.alpha, 1, accuracy: 0.001)
+        }
+        // 渐变随进度铺展：末色落在弧线终点。
+        XCTAssertEqual(globalOverlay?.ringGradientLocations ?? [], [0, 0.5, 1])
 
+        Interlude.progress(1, fill: .gradient)
+        await clock.advance(by: 0.2)
+        XCTAssertEqual(globalOverlay?.ringGradientLocations ?? [], [0, 0, 1])
+
+        var theme = Interlude.Theme.dark
+        theme.progressFill = .gradient
+        theme.progressGradient = [.white, .systemCyan]
         Interlude.progress(0.5, style: .bar, theme: theme)
         await clock.advance(by: 0.2)
         XCTAssertEqual(globalOverlay?.barUsesGradient, true)
     }
 
-    func test_theme_progressGradient_empty_usesSolid() async {
+    func test_theme_progressFill_solid_usesSolid() async {
         var theme = Interlude.Theme.dark
-        theme.progressGradient = []
+        theme.progressGradient = [.white, .systemCyan]
         Interlude.progress(0.5, theme: theme)
         await clock.advance(by: 0.2)
         XCTAssertEqual(globalOverlay?.ringUsesGradient, false)
 
-        Interlude.progress(0.5, style: .bar, theme: theme)
+        Interlude.progress(0.5, style: .bar, fill: .solid, theme: theme)
         await clock.advance(by: 0.2)
         XCTAssertEqual(globalOverlay?.barUsesGradient, false)
     }
@@ -252,7 +268,7 @@ final class HUDFeatureTests: InterludeTestCase {
         await clock.advance(by: 0.2)
         window.layoutIfNeeded()
         XCTAssertEqual(globalOverlay?.displayedPercentage, "100%")
-        XCTAssertEqual(globalOverlay?.indicatorSizeConstant, 52)
+        XCTAssertEqual(globalOverlay?.laidOutIndicatorSize, CGSize(width: 80, height: 80))
         XCTAssertEqual(globalOverlay?.ringPercentageLabelFitsInsideStroke, true)
     }
 

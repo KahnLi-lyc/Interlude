@@ -6,17 +6,28 @@ All notable changes to this project are documented here. The format follows
 
 ## [Unreleased]
 
+## [1.2.0] - 2026-09-10
+
 ### Added
 
-- `Theme.progressGradient`: two or more colours draw a conic gradient on the ring and an axial
-  gradient on the bar; fewer colours keep a solid `indicatorColor`. Presets use
-  `[indicatorColor, infoColor]`.
+- `Interlude.ProgressFill` (`.solid` / `.gradient`) with `Theme.progressFill` (default `.solid`) and a
+  per-call `fill:` on `Interlude.progress` / SwiftUI `interludeProgress`. `Theme.progressGradient`
+  customises the ramp; otherwise a same-hue fallback is used (no black-to-blue mix).
 
 ### Changed
 
-- HUD defaults are larger: `indicatorSize` 52, `ringLineWidth` 5, `minimumSize` 96×96. Loading uses
-  a `.large` spinner (1.25× unless Reduce Motion); result SF Symbols are semibold. Ring percentage
-  stays fully visible inside the stroke.
+- HUD chrome is larger: panel `minimumSize` 128×128, `contentInsets` 20/24, `cornerRadius` 16,
+  `indicatorSize` 80, `ringLineWidth` 8. Loading spinner scales to 75% of `indicatorSize` unless
+  Reduce Motion; result symbols use `indicatorSize * 0.85`.
+- Ring gradient sweeps with progress (the ramp always spans the visible arc) and collapses to the end
+  colour at 100%, so there is no seam at 12 o'clock. The fallback ramp is opaque `systemCyan → infoColor`.
+
+### Fixed
+
+- Ring progress was laid out at label width (about 50pt) instead of `indicatorSize`: the activity
+  indicator's 750 hugging priority tied with the container width constraint. Spinner and result image
+  now only centre in the container, and the percentage label keeps `2 × ringLineWidth` clearance.
+- Indicator-only HUDs no longer stretch the indicator to fill `minimumSize`; content is centred.
 
 ## [1.1.0] - 2026-09-10
 

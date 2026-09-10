@@ -87,24 +87,35 @@ public extension Interlude {
         public var successColor: UIColor = .systemGreen
         public var errorColor: UIColor = .systemRed
         public var infoColor: UIColor = .systemBlue
-        public var cornerRadius: CGFloat = 12
+        public var cornerRadius: CGFloat = 16
         public var textFont: UIFont = .preferredFont(forTextStyle: .subheadline)
         public var detailFont: UIFont = .preferredFont(forTextStyle: .footnote)
         public var buttonFont: UIFont = .preferredFont(forTextStyle: .subheadline).withWeight(.semibold)
-        public var contentInsets = NSDirectionalEdgeInsets(top: 16, leading: 20, bottom: 16, trailing: 20)
-        public var spacing: CGFloat = 10
-        public var indicatorSize: CGFloat = 52
-        public var ringLineWidth: CGFloat = 5
-        public var minimumSize = CGSize(width: 96, height: 96)
+        public var contentInsets = NSDirectionalEdgeInsets(top: 20, leading: 24, bottom: 20, trailing: 24)
+        public var spacing: CGFloat = 12
+        public var indicatorSize: CGFloat = 80
+        public var ringLineWidth: CGFloat = 8
+        public var minimumSize = CGSize(width: 128, height: 128)
         public var maximumWidth: CGFloat = 260
         public var offset: UIOffset = .zero
         public var animation: Animation = .fade
         public var animationDuration: TimeInterval = 0.15
-        /// At least two colours draw a gradient on ring and bar progress; fewer uses ``indicatorColor``.
+        /// Solid uses ``indicatorColor``; gradient uses ``progressGradient`` or a same-hue fallback.
+        public var progressFill: ProgressFill = .solid
+        /// Custom gradient colours; used only when ``progressFill`` is ``ProgressFill/gradient``.
         public var progressGradient: [UIColor] = []
 
         var usesProgressGradient: Bool {
-            progressGradient.count >= 2
+            progressFill == .gradient
+        }
+
+        /// 渐变色带：自定义双色优先，否则用不透明的青→info 同色系兜底。
+        var resolvedProgressColors: [UIColor] {
+            guard progressFill == .gradient else { return [] }
+            if progressGradient.count >= 2 {
+                return progressGradient
+            }
+            return Self.defaultProgressColors(infoColor: infoColor)
         }
 
         public var toast = Toast()
@@ -133,19 +144,15 @@ public extension Interlude {
         // MARK: - Presets
 
         /// Dark panel with light content. Works on any background.
-        public static let dark: Theme = {
-            var theme = Theme(
-                background: .blur(.systemChromeMaterialDark),
-                reduceTransparencyColor: UIColor(white: 0.08, alpha: 0.96),
-                dimmingColor: UIColor.black.withAlphaComponent(0.12),
-                foregroundColor: .white,
-                secondaryForegroundColor: UIColor.white.withAlphaComponent(0.7),
-                indicatorColor: .white,
-                trackColor: UIColor.white.withAlphaComponent(0.25)
-            )
-            theme.progressGradient = [theme.indicatorColor, theme.infoColor]
-            return theme
-        }()
+        public static let dark = Theme(
+            background: .blur(.systemChromeMaterialDark),
+            reduceTransparencyColor: UIColor(white: 0.08, alpha: 0.96),
+            dimmingColor: UIColor.black.withAlphaComponent(0.12),
+            foregroundColor: .white,
+            secondaryForegroundColor: UIColor.white.withAlphaComponent(0.7),
+            indicatorColor: .white,
+            trackColor: UIColor.white.withAlphaComponent(0.25)
+        )
 
         /// Light panel with dark content.
         public static let light: Theme = {
@@ -158,7 +165,6 @@ public extension Interlude {
                 indicatorColor: UIColor(white: 0.1, alpha: 1),
                 trackColor: UIColor(white: 0.1, alpha: 0.15)
             )
-            theme.progressGradient = [theme.indicatorColor, theme.infoColor]
             theme.toast.background = .solid(UIColor(white: 0.97, alpha: 0.98))
             theme.toast.reduceTransparencyColor = UIColor(white: 0.97, alpha: 1)
             theme.toast.foregroundColor = UIColor(white: 0.1, alpha: 1)
@@ -186,7 +192,6 @@ public extension Interlude {
                     dark: UIColor.white.withAlphaComponent(0.25)
                 )
             )
-            theme.progressGradient = [theme.indicatorColor, theme.infoColor]
             theme.toast.background = .blur(.systemChromeMaterial)
             theme.toast.reduceTransparencyColor = UIColor.dynamic(
                 light: UIColor(white: 0.97, alpha: 1),
@@ -196,6 +201,12 @@ public extension Interlude {
             theme.toast.secondaryForegroundColor = .secondaryLabel
             return theme
         }()
+
+        /// 同色系渐变：青→info，两端都不透明。
+        /// 带 alpha 的起始色会透出灰色轨道，弧线开头显得发暗发脏。
+        static func defaultProgressColors(infoColor: UIColor) -> [UIColor] {
+            [.systemCyan, infoColor]
+        }
     }
 }
 
@@ -209,9 +220,9 @@ extension UIColor {
         }
     }
 
-    /// 解析当前 trait 下的 `CGColor`，供图层使用。
-    var resolvedCGColor: CGColor {
-        resolvedColor(with: UITraitCollection.current).cgColor
+    /// 按视图自身 trait 解析 `CGColor`；`UITraitCollection.current` 在布局回调之外不可靠。
+    func resolvedCGColor(for traits: UITraitCollection) -> CGColor {
+        resolvedColor(with: traits).cgColor
     }
 }
 

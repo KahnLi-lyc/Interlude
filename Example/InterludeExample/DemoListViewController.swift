@@ -104,20 +104,25 @@ final class DemoListViewController: UITableViewController {
                 DispatchQueue.main.asyncAfter(deadline: .now() + 2) { token.dismiss() }
             },
             Demo(title: "Ring progress", subtitle: "update(progress:) from a background thread") { _ in
-                let token = Interlude.progress(text: "Uploading", detail: "0 / 100")
-                DispatchQueue.global().async {
-                    for step in 1 ... 100 {
-                        Thread.sleep(forTimeInterval: 0.02)
-                        token.update(progress: Double(step) / 100)
-                        token.update(detail: "\(step) / 100")
-                    }
-                    token.finish(.success("Uploaded"))
-                }
+                Self.simulateCountedProgress(fill: nil)
             },
             Demo(title: "Bar progress + Progress binding", subtitle: "token.observe(Progress)") { controller in
                 let progress = Progress(totalUnitCount: 50)
                 controller.downloadProgress = progress
                 let token = Interlude.progress(progress, style: .bar, text: "Downloading")
+                token.onCancel {
+                    progress.cancel()
+                    controller.downloadProgress = nil
+                }
+                controller.tick(progress, token: token)
+            },
+            Demo(title: "Gradient ring", subtitle: "fill: .gradient, same-hue ramp") { _ in
+                Self.simulateCountedProgress(fill: .gradient)
+            },
+            Demo(title: "Gradient bar", subtitle: "fill: .gradient on a bar") { controller in
+                let progress = Progress(totalUnitCount: 50)
+                controller.downloadProgress = progress
+                let token = Interlude.progress(progress, style: .bar, fill: .gradient, text: "Downloading")
                 token.onCancel {
                     progress.cancel()
                     controller.downloadProgress = nil
@@ -299,6 +304,18 @@ final class DemoListViewController: UITableViewController {
                 )
             }
         ])
+    }
+
+    private static func simulateCountedProgress(fill: Interlude.ProgressFill?) {
+        let token = Interlude.progress(fill: fill, text: "Uploading", detail: "0 / 100")
+        DispatchQueue.global().async {
+            for step in 1 ... 100 {
+                Thread.sleep(forTimeInterval: 0.02)
+                token.update(progress: Double(step) / 100)
+                token.update(detail: "\(step) / 100")
+            }
+            token.finish(.success("Uploaded"))
+        }
     }
 
     private func makeThemeMenu() -> UIMenu {

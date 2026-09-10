@@ -218,6 +218,7 @@ DetailView()
 | `Interlude.Animation` | `enum` | `.fade / .zoom / .zoomIn / .zoomOut / .none` |
 | `Interlude.Interaction` | `enum` | `.blocking / .passthrough` |
 | `Interlude.ProgressStyle` | `enum` | `.ring / .bar` |
+| `Interlude.ProgressFill` | `enum` | `.solid / .gradient` |
 | `Interlude.Result` | `enum, Sendable` | `.success(String?) / .error(String?) / .info(String?) / .image(UIImage, String?)` |
 | `Interlude.TimeoutBehavior` | `enum, Sendable` | `.dismiss / .error(message: String?)` |
 | `Interlude.Token` | `final class, Sendable` | HUD 任务句柄 |
@@ -378,8 +379,9 @@ public final class Token: Sendable {
 **行为**
 
 - 百分比按当前 Locale 格式化（`NumberFormatter.percent`，0 位小数）。
-- 圆环中心百分比完整可见：字号约 13pt（Dynamic Type 上限 16），内缩量为 `ringLineWidth`，避免 `100%` 被描边裁切。
-- 进度圆环 / 进度条：`progressGradient` 含至少两色时分别绘制圆锥 / 轴向渐变；否则使用 `indicatorColor` 实心。
+- 圆环中心百分比完整可见：字号约 15pt（Dynamic Type 上限 18），标签左右内缩 `2 × ringLineWidth`，文字矩形四角落在描边内圆里。
+- 进度填充：`ProgressFill.solid`（默认）使用 `indicatorColor`；`.gradient` 使用 `progressGradient`（≥2 色）或不透明同色系兜底 `[.systemCyan, infoColor]`。`Interlude.progress(..., fill:)` 可按次覆盖。
+- 圆环渐变随进度铺展：色带落在 `[0, progress]`，末色重复到整圈；`progress == 1` 时整环收成末色，12 点方向不出现色缝。
 - 进度变化使用 0.15 s `strokeEnd` / 宽度动画，Reduce Motion 关闭动画。
 - `.custom` 视图尺寸取其 `intrinsicContentSize`，无内在尺寸时使用主题 `indicatorSize`。
 - `detail` 使用次要颜色与更小字体，nil / 空串隐藏。
@@ -391,7 +393,7 @@ public final class Token: Sendable {
 - AC-05-3 `text` HUD 到 `textDuration` 后自动隐藏。
 - AC-05-4 `custom` 视图被添加为面板子视图且居中。
 - AC-05-5 `update(detail:)` 后面板 `renderedDetail` 更新；传空串后隐藏。
-- AC-05-6 默认 52pt 圆环在 `progress == 1` 时中心 `100%` 完整落在描边内侧。
+- AC-05-6 默认 80pt 圆环真实布局为 80 × 80，`progress == 1` 时中心 `100%` 四角全部落在描边内圆里。
 
 ### 4.6 结果与 Haptics
 
@@ -484,9 +486,10 @@ func onTimeout(_ handler: @escaping @MainActor () -> Void) -> Token
 - 主题修改后，已显示面板在下一次渲染时应用（不强制重绘）。
 - `.automatic` 使用动态颜色，随 Light / Dark 模式切换。
 - Reduce Transparency 开启时，`.blur` 背景降级为 `reduceTransparencyColor` 纯色。
-- `progressGradient` 至少两色时，圆环用圆锥渐变、进度条用轴向渐变；不足两色时回退 `indicatorColor`。
-- 预设 `.dark` / `.light` / `.automatic` 的 `progressGradient` 为 `[indicatorColor, infoColor]`。
-- 加载指示器使用 `.large` 系统菊花，非 Reduce Motion 时额外放大 1.25×；结果 SF Symbol 字重 `.semibold`，点大小为 `indicatorSize * 0.9`。
+- `progressFill` 默认 `.solid`；`.gradient` 时圆环圆锥渐变、进度条轴向渐变。色带优先 `progressGradient`（≥2 色），否则不透明同色系兜底 `[.systemCyan, infoColor]`；两端不带 alpha，避免透出轨道发暗。图层颜色按视图自身 `traitCollection` 解析。
+- `Interlude.progress(..., fill:)` 写入该次主题副本；`nil` 跟随 `Theme.progressFill`。
+- 加载指示器使用 `.large` 系统菊花，非 Reduce Motion 时放大到 `indicatorSize * 0.75`；结果 SF Symbol 字重 `.semibold`，点大小为 `indicatorSize * 0.85`。菊花与结果图只居中、不与指示器容器等宽（菊花 hugging 750 会与容器宽度打平，把圆环压窄）。
+- 内容比 `minimumSize` 矮时（仅指示器），内容在面板内垂直居中而非被拉伸。
 
 **Theme 字段**
 
@@ -500,20 +503,21 @@ func onTimeout(_ handler: @escaping @MainActor () -> Void) -> Token
 | `indicatorColor` | `UIColor` | `.white` |
 | `trackColor` | `UIColor` | `white 25%` |
 | `successColor / errorColor / infoColor` | `UIColor` | `.systemGreen / .systemRed / .systemBlue` |
-| `cornerRadius` | `CGFloat` | 12 |
+| `cornerRadius` | `CGFloat` | 16 |
 | `textFont` | `UIFont` | `.preferredFont(.subheadline)` |
 | `detailFont` | `UIFont` | `.preferredFont(.footnote)` |
 | `buttonFont` | `UIFont` | `.preferredFont(.subheadline, weight: .semibold)` |
-| `contentInsets` | `NSDirectionalEdgeInsets` | `(16, 20, 16, 20)` |
-| `spacing` | `CGFloat` | 10 |
-| `indicatorSize` | `CGFloat` | 52 |
-| `ringLineWidth` | `CGFloat` | 5 |
-| `minimumSize` | `CGSize` | `96 × 96` |
+| `contentInsets` | `NSDirectionalEdgeInsets` | `(20, 24, 20, 24)` |
+| `spacing` | `CGFloat` | 12 |
+| `indicatorSize` | `CGFloat` | 80 |
+| `ringLineWidth` | `CGFloat` | 8 |
+| `minimumSize` | `CGSize` | `128 × 128` |
 | `maximumWidth` | `CGFloat` | 260 |
 | `offset` | `UIOffset` | `.zero` |
 | `animation` | `Animation` | `.fade` |
 | `animationDuration` | `TimeInterval` | 0.15 |
-| `progressGradient` | `[UIColor]` | `[indicatorColor, infoColor]`（预设）；自定义 `Theme()` 为空数组 |
+| `progressFill` | `ProgressFill` | `.solid` |
+| `progressGradient` | `[UIColor]` | `[]`（`.gradient` 且为空时用同色系兜底） |
 | `toast` | `Theme.Toast` | 见下 |
 
 `Theme.Toast` 字段：`background`（`.solid(black 80%)`）、`foregroundColor`、`secondaryForegroundColor`、`cornerRadius`（10）、`messageFont`、`titleFont`、`contentInsets`（`(10, 14, 10, 14)`）、`maximumWidthRatio`（0.8）、`edgeInset`（16，距屏幕边缘 / 安全区）、`spacing`（8）、`shadow`（可选 `Shadow` 值类型）、`iconSize`（20）、`actionTintColor`、`animation`（`.automatic`）。
@@ -525,9 +529,9 @@ func onTimeout(_ handler: @escaping @MainActor () -> Void) -> Token
 - AC-10-1 设置 `theme.cornerRadius = 20` 后新面板 `panel.layer.cornerRadius == 20`。
 - AC-10-2 单次 `theme:` 覆盖不影响 `Interlude.theme`。
 - AC-10-3 Reduce Transparency 开启时 `panel.effect == nil`。
-- AC-10-4 默认 `indicatorSize == 52` 且应用到指示器容器约束；单次覆盖后容器边长跟随。
-- AC-10-5 `progressGradient` 至少两色时圆环 / 进度条使用渐变。
-- AC-10-6 `progressGradient` 为空时使用实心 `indicatorColor`。
+- AC-10-4 默认 `indicatorSize == 80`，圆环真实布局尺寸为 80 × 80；单次覆盖为 96 后真实尺寸跟随。
+- AC-10-5 `fill: .gradient`（或 `theme.progressFill = .gradient`）时圆环 / 进度条使用渐变；兜底色带每个颜色 alpha 为 1，圆环 `locations` 在 50% 为 `[0, 0.5, 1]`、100% 为 `[0, 0, 1]`。
+- AC-10-6 默认 `.solid` 使用实心 `indicatorColor`，即使 `progressGradient` 有颜色。
 
 ### 4.11 动画
 
@@ -703,7 +707,7 @@ static func run<T: Sendable>(
 **行为**
 
 - `interludeLoading(isPresented:text:interaction:)`：`isPresented` 变 true 登记 Token，变 false 或视图消失时 `dismiss()`。
-- `interludeProgress(_ value: Binding<Double?>, text:style:)`：非 nil 时展示并同步进度，nil 时 dismiss。
+- `interludeProgress(_ value: Binding<Double?>, style:fill:text:)`：非 nil 时展示并同步进度，nil 时 dismiss。
 - `interludeToast(_ item: Binding<Toast?>)`：非 nil 时展示并在消失后置回 nil。
 - `interludeHost()`：在视图背后放置透明 `UIViewRepresentable`，把其 UIView 通过 Environment 提供给内部修饰符，使其走局部宿主；未使用时内部修饰符走全局窗口。
 
@@ -827,7 +831,7 @@ static func run<T: Sendable>(
 | AC-08-1…3 | `test_cancel_buttonVisible` / `test_cancel_tapInvokesHandlerAndDismisses` / `test_cancel_forcesBlocking` |
 | AC-09-1…3 | `test_timeout_elapsed_showsError` / `test_timeout_dismissBehavior_hidden` / `test_timeout_dismissedEarly_handlerNotCalled` |
 | AC-10-1…3 | `test_theme_cornerRadiusApplied` / `test_theme_perCallOverride_doesNotMutateGlobal` / `test_theme_reduceTransparency_removesBlur` |
-| AC-10-4…6 | `test_theme_indicatorSize_appliedToContainer` / `test_theme_progressGradient_twoColors_drawsGradient` / `test_theme_progressGradient_empty_usesSolid` |
+| AC-10-4…6 | `test_theme_indicatorSize_appliedToContainer` / `test_theme_progressFill_gradient_drawsGradient` / `test_theme_progressFill_solid_usesSolid` |
 | AC-11-1…2 | `test_animation_reduceMotion_immediate` / `test_animation_none_hideCompletesSynchronously` |
 | AC-12-1…3 | `test_a11y_loadingDefaultLabel` / `test_a11y_progressValue` / `test_a11y_blockingIsModal` |
 | AC-13-1…2 | `test_strings_override_appliedToA11y` / `test_localization_allLprojKeysMatch` |

@@ -22,8 +22,9 @@ final class HUDView: UIView {
     }
 
     private enum Constants {
-        static let spinnerScale: CGFloat = 1.25
-        static let resultSymbolSizeRatio: CGFloat = 0.9
+        /// 菊花放大后占指示器边长的比例；`.large` 菊花内在尺寸固定 37pt，需按主题尺寸换算。
+        static let spinnerFillRatio: CGFloat = 0.75
+        static let resultSymbolSizeRatio: CGFloat = 0.85
     }
 
     typealias LocalHostExitHandler = @MainActor () -> Void
@@ -67,23 +68,6 @@ final class HUDView: UIView {
         customContainer.subviews.first
     }
 
-    /// 指示器容器当前约束边长，供主题验收使用。
-    var indicatorSizeConstant: CGFloat {
-        indicatorWidthConstraint?.constant ?? theme.indicatorSize
-    }
-
-    var ringUsesGradient: Bool {
-        ringView.usesGradient
-    }
-
-    var barUsesGradient: Bool {
-        barView.usesGradient
-    }
-
-    var ringPercentageLabelFitsInsideStroke: Bool {
-        ringView.percentageLabelFitsInsideStroke()
-    }
-
     // MARK: - Private Properties
 
     private var hostExitObservationGeneration = 0
@@ -94,6 +78,8 @@ final class HUDView: UIView {
     private var panelMinHeightConstraint: NSLayoutConstraint?
     private var stackTopConstraint: NSLayoutConstraint?
     private var stackBottomConstraint: NSLayoutConstraint?
+    private var stackTopMinimumConstraint: NSLayoutConstraint?
+    private var stackBottomMinimumConstraint: NSLayoutConstraint?
     private var stackLeadingConstraint: NSLayoutConstraint?
     private var stackTrailingConstraint: NSLayoutConstraint?
     private var indicatorWidthConstraint: NSLayoutConstraint?
@@ -391,12 +377,22 @@ final class HUDView: UIView {
         panelMinWidthConstraint = minWidth
         panelMinHeightConstraint = minHeight
 
+        // 内容比 minimumSize 矮时（只有指示器），面板由最小高度撑开，内容垂直居中而不是被拉伸：
+        // 贴边约束降为 999，再用 >= 与 centerY 兜底，避免指示器高度与栈的填充约束冲突。
         let stackTop = contentStack.topAnchor.constraint(equalTo: panel.contentView.topAnchor)
         let stackBottom = panel.contentView.bottomAnchor.constraint(equalTo: contentStack.bottomAnchor)
+        stackTop.priority = UILayoutPriority(999)
+        stackBottom.priority = UILayoutPriority(999)
+        let stackTopMinimum = contentStack.topAnchor.constraint(greaterThanOrEqualTo: panel.contentView.topAnchor)
+        let stackBottomMinimum = panel.contentView.bottomAnchor.constraint(
+            greaterThanOrEqualTo: contentStack.bottomAnchor
+        )
         let stackLeading = contentStack.leadingAnchor.constraint(equalTo: panel.contentView.leadingAnchor)
         let stackTrailing = panel.contentView.trailingAnchor.constraint(equalTo: contentStack.trailingAnchor)
         stackTopConstraint = stackTop
         stackBottomConstraint = stackBottom
+        stackTopMinimumConstraint = stackTopMinimum
+        stackBottomMinimumConstraint = stackBottomMinimum
         stackLeadingConstraint = stackLeading
         stackTrailingConstraint = stackTrailing
 
@@ -411,22 +407,29 @@ final class HUDView: UIView {
             centerX, centerY, maxWidth, minWidth, minHeight,
             panel.leadingAnchor.constraint(greaterThanOrEqualTo: leadingAnchor, constant: 32),
             trailingAnchor.constraint(greaterThanOrEqualTo: panel.trailingAnchor, constant: 32),
-            stackTop, stackBottom, stackLeading, stackTrailing,
+            stackTop, stackBottom, stackTopMinimum, stackBottomMinimum, stackLeading, stackTrailing,
+            contentStack.centerYAnchor.constraint(equalTo: panel.contentView.centerYAnchor),
             indicatorWidth, indicatorHeight
         ])
 
-        for view in [activityIndicator, ringView, resultImageView] {
+        // 菊花、进度条只居中：菊花的 content hugging 是 750，若再与容器等宽，
+        // 会和 750 优先级的容器宽度打平，导致容器被百分比标签收缩。
+        for view in [activityIndicator, barView] {
             NSLayoutConstraint.activate([
                 view.centerXAnchor.constraint(equalTo: indicatorContainer.centerXAnchor),
-                view.centerYAnchor.constraint(equalTo: indicatorContainer.centerYAnchor),
-                view.widthAnchor.constraint(equalTo: indicatorContainer.widthAnchor),
-                view.heightAnchor.constraint(equalTo: indicatorContainer.heightAnchor)
+                view.centerYAnchor.constraint(equalTo: indicatorContainer.centerYAnchor)
             ])
         }
-        // 进度条比指示器宽，只在垂直方向居中于容器。
         NSLayoutConstraint.activate([
-            barView.centerXAnchor.constraint(equalTo: indicatorContainer.centerXAnchor),
-            barView.centerYAnchor.constraint(equalTo: indicatorContainer.centerYAnchor)
+            ringView.centerXAnchor.constraint(equalTo: indicatorContainer.centerXAnchor),
+            ringView.centerYAnchor.constraint(equalTo: indicatorContainer.centerYAnchor),
+            ringView.widthAnchor.constraint(equalTo: indicatorContainer.widthAnchor),
+            ringView.heightAnchor.constraint(equalTo: indicatorContainer.heightAnchor),
+            // 结果符号只限制不超出容器，避免宽符号的抗压缩优先级再次与容器宽度冲突。
+            resultImageView.centerXAnchor.constraint(equalTo: indicatorContainer.centerXAnchor),
+            resultImageView.centerYAnchor.constraint(equalTo: indicatorContainer.centerYAnchor),
+            resultImageView.widthAnchor.constraint(lessThanOrEqualTo: indicatorContainer.widthAnchor),
+            resultImageView.heightAnchor.constraint(lessThanOrEqualTo: indicatorContainer.heightAnchor)
         ])
     }
 
@@ -475,6 +478,8 @@ final class HUDView: UIView {
         panelMinHeightConstraint?.constant = theme.minimumSize.height
         stackTopConstraint?.constant = theme.contentInsets.top
         stackBottomConstraint?.constant = theme.contentInsets.bottom
+        stackTopMinimumConstraint?.constant = theme.contentInsets.top
+        stackBottomMinimumConstraint?.constant = theme.contentInsets.bottom
         stackLeadingConstraint?.constant = theme.contentInsets.leading
         stackTrailingConstraint?.constant = theme.contentInsets.trailing
         contentStack.spacing = theme.spacing
@@ -489,9 +494,9 @@ final class HUDView: UIView {
         )
         ringView.lineWidth = theme.ringLineWidth
         ringView.trackColor = theme.trackColor
-        ringView.applyProgressAppearance(gradient: theme.progressGradient, solid: theme.indicatorColor)
+        ringView.applyProgressAppearance(gradient: theme.resolvedProgressColors, solid: theme.indicatorColor)
         barView.trackColor = theme.trackColor
-        barView.applyProgressAppearance(gradient: theme.progressGradient, solid: theme.indicatorColor)
+        barView.applyProgressAppearance(gradient: theme.resolvedProgressColors, solid: theme.indicatorColor)
         textLabel.font = theme.textFont
         textLabel.textColor = theme.foregroundColor
         detailLabel.font = theme.detailFont
@@ -521,9 +526,17 @@ final class HUDView: UIView {
     }
 
     private func applySpinnerScale() {
-        activityIndicator.transform = UIAccessibility.isReduceMotionEnabled
-            ? .identity
-            : CGAffineTransform(scaleX: Constants.spinnerScale, y: Constants.spinnerScale)
+        guard !UIAccessibility.isReduceMotionEnabled else {
+            activityIndicator.transform = .identity
+            return
+        }
+        let intrinsicWidth = activityIndicator.intrinsicContentSize.width
+        guard intrinsicWidth > 0 else {
+            activityIndicator.transform = .identity
+            return
+        }
+        let scale = max(1, theme.indicatorSize * Constants.spinnerFillRatio / intrinsicWidth)
+        activityIndicator.transform = CGAffineTransform(scaleX: scale, y: scale)
     }
 
     // MARK: 模式渲染
@@ -810,6 +823,41 @@ final class HUDView: UIView {
         }
         hostExitObservationGeneration &+= 1
         localHostExitHandler?()
+    }
+}
+
+// MARK: - 验收只读属性
+
+extension HUDView {
+    /// 指示器容器当前约束边长，供主题验收使用。
+    var indicatorSizeConstant: CGFloat {
+        indicatorWidthConstraint?.constant ?? theme.indicatorSize
+    }
+
+    /// 圆环真实布局后的尺寸；约束常量正确不代表布局正确，验收必须看这个。
+    var laidOutIndicatorSize: CGSize {
+        layoutIfNeeded()
+        return ringView.bounds.size
+    }
+
+    var ringUsesGradient: Bool {
+        ringView.usesGradient
+    }
+
+    var barUsesGradient: Bool {
+        barView.usesGradient
+    }
+
+    var ringPercentageLabelFitsInsideStroke: Bool {
+        ringView.percentageLabelFitsInsideStroke()
+    }
+
+    var ringGradientLocations: [Double] {
+        ringView.gradientLocations
+    }
+
+    var ringGradientColors: [CGColor] {
+        ringView.gradientColors
     }
 }
 

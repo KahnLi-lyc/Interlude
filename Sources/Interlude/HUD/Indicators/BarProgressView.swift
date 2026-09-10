@@ -6,10 +6,10 @@ final class BarProgressView: UIView {
     // MARK: - Types
 
     private enum Constants {
-        static let barHeight: CGFloat = 8
-        static let barWidth: CGFloat = 140
+        static let barHeight: CGFloat = 10
+        static let barWidth: CGFloat = 168
         static let spacing: CGFloat = 8
-        static let percentageWidth: CGFloat = 40
+        static let percentageWidth: CGFloat = 48
     }
 
     // MARK: - Public Properties
@@ -74,8 +74,8 @@ final class BarProgressView: UIView {
 
     private lazy var percentageLabel: UILabel = {
         let label = UILabel()
-        let baseFont = UIFont.monospacedDigitSystemFont(ofSize: 12, weight: .semibold)
-        label.font = UIFontMetrics(forTextStyle: .caption1).scaledFont(for: baseFont, maximumPointSize: 15)
+        let baseFont = UIFont.monospacedDigitSystemFont(ofSize: 15, weight: .semibold)
+        label.font = UIFontMetrics(forTextStyle: .caption1).scaledFont(for: baseFont, maximumPointSize: 18)
         label.adjustsFontForContentSizeCategory = true
         label.textColor = progressColor
         label.textAlignment = .right
@@ -106,7 +106,7 @@ final class BarProgressView: UIView {
     override func traitCollectionDidChange(_ previousTraitCollection: UITraitCollection?) {
         super.traitCollectionDidChange(previousTraitCollection)
         if usesGradient {
-            fillGradient.colors = storedGradientColors.map(\.resolvedCGColor)
+            fillGradient.colors = storedGradientColors.map { $0.resolvedCGColor(for: traitCollection) }
         }
     }
 
@@ -133,7 +133,7 @@ final class BarProgressView: UIView {
         progressColor = solid
         if gradient.count >= 2 {
             fillView.backgroundColor = .clear
-            fillGradient.colors = gradient.map(\.resolvedCGColor)
+            fillGradient.colors = gradient.map { $0.resolvedCGColor(for: traitCollection) }
             if fillGradient.superlayer !== fillView.layer {
                 fillView.layer.insertSublayer(fillGradient, at: 0)
             }

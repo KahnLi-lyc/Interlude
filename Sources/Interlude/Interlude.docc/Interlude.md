@@ -35,8 +35,8 @@ Interlude.toast("Message sent", icon: .success)
 ### HUD
 
 - ``Interlude/loading(_:detail:on:interaction:timeout:theme:)``
-- ``Interlude/progress(_:style:text:detail:on:interaction:timeout:theme:)``
-- ``Interlude/progress(_:style:text:on:interaction:timeout:theme:)``
+- ``Interlude/progress(_:style:fill:text:detail:on:interaction:timeout:theme:)``
+- ``Interlude/progress(_:style:fill:text:on:interaction:timeout:theme:)``
 - ``Interlude/text(_:detail:duration:on:theme:)``
 - ``Interlude/custom(_:text:detail:on:interaction:timeout:theme:)``
 - ``Interlude/show(_:on:theme:)``
@@ -46,6 +46,7 @@ Interlude.toast("Message sent", icon: .success)
 - ``Interlude/Result``
 - ``Interlude/Interaction``
 - ``Interlude/ProgressStyle``
+- ``Interlude/ProgressFill``
 - ``Interlude/TimeoutBehavior``
 - ``Interlude/Animation``
 
@@ -60,11 +61,11 @@ Interlude.toast("Message sent", icon: .success)
 ### async / await
 
 - ``Interlude/run(_:on:interaction:success:failure:cancellable:timeout:theme:operation:)``
-- ``Interlude/run(_:style:totalUnitCount:on:interaction:success:failure:cancellable:timeout:theme:operation:)``
+- ``Interlude/run(_:style:fill:totalUnitCount:on:interaction:success:failure:cancellable:timeout:theme:operation:)``
 
 ### SwiftUI
 
 - ``SwiftUICore/View/interludeLoading(isPresented:text:interaction:)``
-- ``SwiftUICore/View/interludeProgress(_:style:text:interaction:)``
+- ``SwiftUICore/View/interludeProgress(_:style:fill:text:interaction:)``
 - ``SwiftUICore/View/interludeToast(_:)``
 - ``SwiftUICore/View/interludeHost()``

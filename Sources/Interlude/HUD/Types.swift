@@ -23,6 +23,15 @@ public extension Interlude {
         case bar
     }
 
+    /// Fill used by ring and bar progress.
+    enum ProgressFill: Sendable, Equatable {
+        /// A single ``Theme/indicatorColor``.
+        case solid
+
+        /// A same-hue gradient, or ``Theme/progressGradient`` when it has two or more colours.
+        case gradient
+    }
+
     /// A short-lived outcome shown after a task finishes.
     enum Result: Sendable {
         /// A green checkmark. The optional text replaces the default accessibility label.

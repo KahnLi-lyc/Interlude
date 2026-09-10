@@ -20,10 +20,11 @@ public extension View {
     func interludeProgress(
         _ value: Binding<Double?>,
         style: Interlude.ProgressStyle = .ring,
+        fill: Interlude.ProgressFill? = nil,
         text: String? = nil,
         interaction: Interlude.Interaction = .blocking
     ) -> some View {
-        modifier(ProgressModifier(value: value, style: style, text: text, interaction: interaction))
+        modifier(ProgressModifier(value: value, style: style, fill: fill, text: text, interaction: interaction))
     }
 
     /// Shows the toast in `item` and resets the binding to `nil` when it disappears.
@@ -122,6 +123,7 @@ private struct LoadingModifier: ViewModifier {
 private struct ProgressModifier: ViewModifier {
     @Binding var value: Double?
     let style: Interlude.ProgressStyle
+    let fill: Interlude.ProgressFill?
     let text: String?
     let interaction: Interlude.Interaction
 
@@ -144,7 +146,14 @@ private struct ProgressModifier: ViewModifier {
         if let token, token.isActive {
             token.update(progress: value)
         } else {
-            token = Interlude.progress(value, style: style, text: text, on: host?.view, interaction: interaction)
+            token = Interlude.progress(
+                value,
+                style: style,
+                fill: fill,
+                text: text,
+                on: host?.view,
+                interaction: interaction
+            )
         }
     }
 

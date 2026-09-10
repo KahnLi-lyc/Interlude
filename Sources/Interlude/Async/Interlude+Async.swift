@@ -44,6 +44,7 @@ public extension Interlude {
     /// - Parameters:
     ///   - text: Primary text of the HUD.
     ///   - style: Ring or bar.
+    ///   - fill: Solid or gradient. `nil` uses ``Theme/progressFill``.
     ///   - totalUnitCount: Total units of the created `Progress`.
     ///   - host: A view to attach to. `nil` uses the global window.
     ///   - interaction: Whether touches are blocked while the operation runs.
@@ -58,6 +59,7 @@ public extension Interlude {
     static func run<T: Sendable>(
         _ text: String? = nil,
         style: ProgressStyle,
+        fill: ProgressFill? = nil,
         totalUnitCount: Int64 = 100,
         on host: UIView? = nil,
         interaction: Interaction = .blocking,
@@ -72,6 +74,7 @@ public extension Interlude {
         let token = Self.progress(
             progress,
             style: style,
+            fill: fill,
             text: text,
             on: host,
             interaction: interaction,

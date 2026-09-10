@@ -6,6 +6,10 @@ All notable changes to this project are documented here. The format follows
 
 ## [Unreleased]
 
+### Added
+
+- The Example app now integrates LookinServer 1.2.8 for Debug view inspection and Lookin MCP workflows.
+
 ### Fixed
 
 - Gradient rings no longer sample the terminal colour across the conic seam at the rounded start cap.

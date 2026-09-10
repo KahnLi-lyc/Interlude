@@ -214,6 +214,12 @@ Presets: `.automatic` (follows system appearance), `.dark`, `.light`.
 
 Open `Example/InterludeExample.xcodeproj` (regenerate with `xcodegen` from `Example/project.yml`). Every public API has a row in the demo list; `--autoplay <scenario>` launches straight into a scenario for screenshots.
 
+### Inspecting with Lookin
+
+The Example app links [LookinServer 1.2.8](https://github.com/QMUI/LookinServer/) as a development-only dependency. LookinServer's implementation is enabled only in Debug builds, so no explicit startup code is required and Release builds do not launch the inspection server. The Interlude library itself remains dependency-free.
+
+Build and run the [MCP-enabled Lookin branch](https://github.com/FeliksLv01/Lookin/tree/feat/lookin_mcp), then connect an MCP client to `http://127.0.0.1:47199/mcp`. Launch the Example with `--autoplay loading` to inspect a HUD or `--autoplay toast` to inspect three stacked toasts.
+
 ## Contributing
 
 See [AGENTS.md](AGENTS.md) for the coding conventions and [DESIGN.md](DESIGN.md) for the design specification. Run `swiftformat .`, `swiftlint --strict` and the test suite before opening a pull request.

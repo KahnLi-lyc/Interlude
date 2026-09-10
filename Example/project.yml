@@ -9,6 +9,9 @@ options:
 packages:
   Interlude:
     path: ..
+  LookinServer:
+    url: https://github.com/QMUI/LookinServer/
+    exactVersion: 1.2.8
 
 settings:
   base:
@@ -25,6 +28,7 @@ targets:
       - path: InterludeExample
     dependencies:
       - package: Interlude
+      - package: LookinServer
     info:
       path: InterludeExample/Info.plist
       properties:

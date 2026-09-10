@@ -214,6 +214,12 @@ Interlude.loading("支付中", theme: .light)
 
 打开 `Example/InterludeExample.xcodeproj`（可用 `xcodegen` 从 `Example/project.yml` 重新生成）。每个公开 API 在示例列表里都有一行；`--autoplay <场景>` 启动参数可直接进入某个场景用于截图。
 
+### 使用 Lookin 检查视图
+
+示例工程将 [LookinServer 1.2.8](https://github.com/QMUI/LookinServer/) 作为仅供开发调试的依赖链接。LookinServer 的实现只在 Debug 构建中启用，因此无需显式编写启动代码，Release 构建也不会启动检查服务。Interlude 库本身仍保持零第三方依赖。
+
+构建并运行[支持 MCP 的 Lookin 分支](https://github.com/FeliksLv01/Lookin/tree/feat/lookin_mcp)，然后让 MCP 客户端连接 `http://127.0.0.1:47199/mcp`。使用 `--autoplay loading` 启动示例工程可检查一个 HUD，使用 `--autoplay toast` 可检查三个堆叠 Toast。
+
 ## 参与贡献
 
 编码规范见 [AGENTS.md](AGENTS.md)，设计说明见 [DESIGN.md](DESIGN.md)。提 PR 前请运行 `swiftformat .`、`swiftlint --strict` 与测试。

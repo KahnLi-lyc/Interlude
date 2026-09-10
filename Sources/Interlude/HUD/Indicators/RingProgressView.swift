@@ -29,6 +29,16 @@ final class RingProgressView: UIView {
         (gradientLayer.colors as? [CGColor]) ?? []
     }
 
+    /// 渐变起点圆帽当前是否可见，供验收读取。
+    var isGradientStartCapVisible: Bool {
+        !gradientStartCapLayer.isHidden
+    }
+
+    /// 渐变起点圆帽当前颜色，供验收读取。
+    var gradientStartCapColor: CGColor? {
+        gradientStartCapLayer.fillColor
+    }
+
     /// 描边中心线半径：四周留一个 lineWidth，描边外缘距边 lineWidth / 2。
     var ringRadius: CGFloat {
         max(0, (min(bounds.width, bounds.height) - lineWidth * 2) / 2)
@@ -77,6 +87,20 @@ final class RingProgressView: UIView {
         layer.startPoint = CGPoint(x: 0.5, y: 0.5)
         layer.endPoint = CGPoint(x: 0.5, y: 0)
         layer.isHidden = true
+        return layer
+    }()
+
+    private lazy var gradientStartCapLayer: CAShapeLayer = {
+        let layer = CAShapeLayer()
+        layer.fillColor = nil
+        layer.isHidden = true
+        layer.actions = [
+            "bounds": NSNull(),
+            "fillColor": NSNull(),
+            "hidden": NSNull(),
+            "path": NSNull(),
+            "position": NSNull()
+        ]
         return layer
     }()
 
@@ -129,8 +153,19 @@ final class RingProgressView: UIView {
         trackLayer.frame = bounds
         progressLayer.frame = bounds
         gradientLayer.frame = bounds
+        gradientStartCapLayer.frame = bounds
         trackLayer.path = path.cgPath
         progressLayer.path = path.cgPath
+        let capCenter = CGPoint(x: bounds.midX, y: bounds.midY - ringRadius)
+        let capRadius = lineWidth / 2
+        gradientStartCapLayer.path = UIBezierPath(
+            ovalIn: CGRect(
+                x: capCenter.x - capRadius,
+                y: capCenter.y - capRadius,
+                width: lineWidth,
+                height: lineWidth
+            )
+        ).cgPath
     }
 
     override func traitCollectionDidChange(_ previousTraitCollection: UITraitCollection?) {
@@ -155,6 +190,7 @@ final class RingProgressView: UIView {
         CATransaction.setDisableActions(true)
         progressLayer.strokeEnd = CGFloat(value)
         gradientLayer.locations = locations
+        updateGradientStartCap()
         CATransaction.commit()
 
         progressLayer.removeAnimation(forKey: Constants.strokeAnimationKey)
@@ -198,6 +234,7 @@ final class RingProgressView: UIView {
             }
             progressLayer.strokeColor = solid.cgColor
         }
+        updateGradientStartCap()
         setNeedsLayout()
     }
 
@@ -230,6 +267,7 @@ final class RingProgressView: UIView {
         accessibilityElementsHidden = true
         layer.addSublayer(trackLayer)
         layer.addSublayer(gradientLayer)
+        layer.addSublayer(gradientStartCapLayer)
         layer.addSublayer(progressLayer)
 
         addSubview(percentageLabel)
@@ -256,6 +294,13 @@ final class RingProgressView: UIView {
         } else {
             progressLayer.strokeColor = progressColor.cgColor
         }
+        updateGradientStartCap()
+    }
+
+    private func updateGradientStartCap() {
+        // 圆角描边会跨过 conic 的 0/1 接缝；用首色圆帽覆盖接缝，避免采到末色。
+        gradientStartCapLayer.fillColor = storedGradientColors.first?.resolvedCGColor(for: traitCollection)
+        gradientStartCapLayer.isHidden = !usesGradient || progress <= 0 || progress >= 1
     }
 
     /// 色带末色重复一次，配合 `locations` 让渐变只铺在 `[0, progress]` 区间。

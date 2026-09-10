@@ -530,7 +530,7 @@ func onTimeout(_ handler: @escaping @MainActor () -> Void) -> Token
 - AC-10-2 单次 `theme:` 覆盖不影响 `Interlude.theme`。
 - AC-10-3 Reduce Transparency 开启时 `panel.effect == nil`。
 - AC-10-4 默认 `indicatorSize == 80`，圆环真实布局尺寸为 80 × 80；单次覆盖为 96 后真实尺寸跟随。
-- AC-10-5 `fill: .gradient`（或 `theme.progressFill = .gradient`）时圆环 / 进度条使用渐变；兜底色带每个颜色 alpha 为 1，圆环 `locations` 在 50% 为 `[0, 0.5, 1]`、100% 为 `[0, 0, 1]`。
+- AC-10-5 `fill: .gradient`（或 `theme.progressFill = .gradient`）时圆环 / 进度条使用渐变；兜底色带每个颜色 alpha 为 1，圆环 `locations` 在 50% 为 `[0, 0.5, 1]`、100% 为 `[0, 0, 1]`；圆环起点圆帽使用渐变首色，不得跨 conic 接缝采到末色。
 - AC-10-6 默认 `.solid` 使用实心 `indicatorColor`，即使 `progressGradient` 有颜色。
 
 ### 4.11 动画
@@ -831,7 +831,7 @@ static func run<T: Sendable>(
 | AC-08-1…3 | `test_cancel_buttonVisible` / `test_cancel_tapInvokesHandlerAndDismisses` / `test_cancel_forcesBlocking` |
 | AC-09-1…3 | `test_timeout_elapsed_showsError` / `test_timeout_dismissBehavior_hidden` / `test_timeout_dismissedEarly_handlerNotCalled` |
 | AC-10-1…3 | `test_theme_cornerRadiusApplied` / `test_theme_perCallOverride_doesNotMutateGlobal` / `test_theme_reduceTransparency_removesBlur` |
-| AC-10-4…6 | `test_theme_indicatorSize_appliedToContainer` / `test_theme_progressFill_gradient_drawsGradient` / `test_theme_progressFill_solid_usesSolid` |
+| AC-10-4…6 | `test_theme_indicatorSize_appliedToContainer` / `test_theme_progressFill_gradient_drawsGradient` / `test_theme_progressFill_gradient_startCapUsesFirstColor` / `test_theme_progressFill_solid_usesSolid` |
 | AC-11-1…2 | `test_animation_reduceMotion_immediate` / `test_animation_none_hideCompletesSynchronously` |
 | AC-12-1…3 | `test_a11y_loadingDefaultLabel` / `test_a11y_progressValue` / `test_a11y_blockingIsModal` |
 | AC-13-1…2 | `test_strings_override_appliedToA11y` / `test_localization_allLprojKeysMatch` |

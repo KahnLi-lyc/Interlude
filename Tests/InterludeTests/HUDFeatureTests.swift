@@ -251,6 +251,28 @@ final class HUDFeatureTests: InterludeTestCase {
         XCTAssertEqual(globalOverlay?.barUsesGradient, true)
     }
 
+    func test_theme_progressFill_gradient_startCapUsesFirstColor() {
+        let firstColor = UIColor.systemYellow
+        let ringView = RingProgressView(frame: CGRect(x: 0, y: 0, width: 80, height: 80))
+        ringView.lineWidth = 8
+        ringView.applyProgressAppearance(gradient: [firstColor, .systemBlue], solid: .white)
+
+        ringView.setProgress(0.9, percentageText: "90%", animated: false)
+        XCTAssertTrue(ringView.isGradientStartCapVisible)
+        let resolvedFirstColor = firstColor.resolvedCGColor(for: ringView.traitCollection)
+        XCTAssertTrue(ringView.gradientStartCapColor.map { $0 == resolvedFirstColor } ?? false)
+
+        ringView.setProgress(0, percentageText: "0%", animated: false)
+        XCTAssertFalse(ringView.isGradientStartCapVisible)
+
+        ringView.setProgress(1, percentageText: "100%", animated: false)
+        XCTAssertFalse(ringView.isGradientStartCapVisible)
+
+        ringView.setProgress(0.5, percentageText: "50%", animated: false)
+        ringView.applyProgressAppearance(gradient: [], solid: .white)
+        XCTAssertFalse(ringView.isGradientStartCapVisible)
+    }
+
     func test_theme_progressFill_solid_usesSolid() async {
         var theme = Interlude.Theme.dark
         theme.progressGradient = [.white, .systemCyan]

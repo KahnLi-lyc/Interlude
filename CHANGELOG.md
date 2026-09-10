@@ -6,6 +6,10 @@ All notable changes to this project are documented here. The format follows
 
 ## [Unreleased]
 
+### Fixed
+
+- Gradient rings no longer sample the terminal colour across the conic seam at the rounded start cap.
+
 ## [1.2.0] - 2026-09-10
 
 ### Added

@@ -185,6 +185,7 @@ theme.cornerRadius = 20
 theme.animation = .zoom
 theme.toast.animation = .slide
 theme.toast.background = .blur(.systemThinMaterial)
+theme.progressGradient = [.white, .systemCyan]
 Interlude.theme = theme
 
 // Or per call

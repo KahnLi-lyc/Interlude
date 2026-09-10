@@ -202,6 +202,60 @@ final class HUDFeatureTests: InterludeTestCase {
         XCTAssertEqual(globalOverlay?.panelCornerRadius, 30)
     }
 
+    func test_theme_indicatorSize_appliedToContainer() async {
+        XCTAssertEqual(Interlude.Theme.dark.indicatorSize, 52)
+        XCTAssertEqual(Interlude.Theme.dark.ringLineWidth, 5)
+        XCTAssertEqual(Interlude.Theme.dark.minimumSize, CGSize(width: 96, height: 96))
+        XCTAssertTrue(Interlude.Theme.dark.usesProgressGradient)
+        XCTAssertTrue(Interlude.Theme.light.usesProgressGradient)
+        XCTAssertTrue(Interlude.Theme.automatic.usesProgressGradient)
+
+        Interlude.progress(0.5)
+        await clock.advance(by: 0.2)
+        window.layoutIfNeeded()
+        XCTAssertEqual(globalOverlay?.indicatorSizeConstant, 52)
+
+        var theme = Interlude.Theme.dark
+        theme.indicatorSize = 64
+        Interlude.progress(0.5, theme: theme)
+        await clock.advance(by: 0.2)
+        window.layoutIfNeeded()
+        XCTAssertEqual(globalOverlay?.indicatorSizeConstant, 64)
+    }
+
+    func test_theme_progressGradient_twoColors_drawsGradient() async {
+        var theme = Interlude.Theme.dark
+        theme.progressGradient = [.white, .systemCyan]
+        Interlude.progress(0.5, theme: theme)
+        await clock.advance(by: 0.2)
+        XCTAssertEqual(globalOverlay?.ringUsesGradient, true)
+
+        Interlude.progress(0.5, style: .bar, theme: theme)
+        await clock.advance(by: 0.2)
+        XCTAssertEqual(globalOverlay?.barUsesGradient, true)
+    }
+
+    func test_theme_progressGradient_empty_usesSolid() async {
+        var theme = Interlude.Theme.dark
+        theme.progressGradient = []
+        Interlude.progress(0.5, theme: theme)
+        await clock.advance(by: 0.2)
+        XCTAssertEqual(globalOverlay?.ringUsesGradient, false)
+
+        Interlude.progress(0.5, style: .bar, theme: theme)
+        await clock.advance(by: 0.2)
+        XCTAssertEqual(globalOverlay?.barUsesGradient, false)
+    }
+
+    func test_ring_fullPercentage_notClipped() async {
+        Interlude.progress(1, style: .ring)
+        await clock.advance(by: 0.2)
+        window.layoutIfNeeded()
+        XCTAssertEqual(globalOverlay?.displayedPercentage, "100%")
+        XCTAssertEqual(globalOverlay?.indicatorSizeConstant, 52)
+        XCTAssertEqual(globalOverlay?.ringPercentageLabelFitsInsideStroke, true)
+    }
+
     // MARK: - Localization
 
     func testEnglishAndChineseTablesAreBundled() throws {

@@ -21,6 +21,11 @@ final class HUDView: UIView {
         case hidden
     }
 
+    private enum Constants {
+        static let spinnerScale: CGFloat = 1.25
+        static let resultSymbolSizeRatio: CGFloat = 0.9
+    }
+
     typealias LocalHostExitHandler = @MainActor () -> Void
 
     // MARK: - Public Properties
@@ -60,6 +65,23 @@ final class HUDView: UIView {
 
     var customContentView: UIView? {
         customContainer.subviews.first
+    }
+
+    /// 指示器容器当前约束边长，供主题验收使用。
+    var indicatorSizeConstant: CGFloat {
+        indicatorWidthConstraint?.constant ?? theme.indicatorSize
+    }
+
+    var ringUsesGradient: Bool {
+        ringView.usesGradient
+    }
+
+    var barUsesGradient: Bool {
+        barView.usesGradient
+    }
+
+    var ringPercentageLabelFitsInsideStroke: Bool {
+        ringView.percentageLabelFitsInsideStroke()
     }
 
     // MARK: - Private Properties
@@ -112,7 +134,7 @@ final class HUDView: UIView {
     }()
 
     private lazy var activityIndicator: UIActivityIndicatorView = {
-        let indicator = UIActivityIndicatorView(style: .medium)
+        let indicator = UIActivityIndicatorView(style: .large)
         indicator.hidesWhenStopped = false
         indicator.isAccessibilityElement = false
         return indicator
@@ -125,7 +147,10 @@ final class HUDView: UIView {
     private lazy var resultImageView: UIImageView = {
         let imageView = UIImageView()
         imageView.contentMode = .scaleAspectFit
-        imageView.preferredSymbolConfiguration = UIImage.SymbolConfiguration(weight: .regular)
+        imageView.preferredSymbolConfiguration = UIImage.SymbolConfiguration(
+            pointSize: theme.indicatorSize * Constants.resultSymbolSizeRatio,
+            weight: .semibold
+        )
         imageView.isAccessibilityElement = false
         return imageView
     }()
@@ -412,6 +437,12 @@ final class HUDView: UIView {
             name: UIAccessibility.reduceTransparencyStatusDidChangeNotification,
             object: nil
         )
+        NotificationCenter.default.addObserver(
+            self,
+            selector: #selector(reduceMotionStatusDidChange),
+            name: UIAccessibility.reduceMotionStatusDidChangeNotification,
+            object: nil
+        )
     }
 
     // MARK: - Actions
@@ -425,6 +456,11 @@ final class HUDView: UIView {
     @objc
     private func reduceTransparencyStatusDidChange() {
         applyBackgroundStyle()
+    }
+
+    @objc
+    private func reduceMotionStatusDidChange() {
+        applySpinnerScale()
     }
 
     // MARK: - Private Methods
@@ -446,11 +482,16 @@ final class HUDView: UIView {
         indicatorHeightConstraint?.constant = theme.indicatorSize
 
         activityIndicator.color = theme.indicatorColor
+        applySpinnerScale()
+        resultImageView.preferredSymbolConfiguration = UIImage.SymbolConfiguration(
+            pointSize: theme.indicatorSize * Constants.resultSymbolSizeRatio,
+            weight: .semibold
+        )
         ringView.lineWidth = theme.ringLineWidth
         ringView.trackColor = theme.trackColor
-        ringView.progressColor = theme.indicatorColor
+        ringView.applyProgressAppearance(gradient: theme.progressGradient, solid: theme.indicatorColor)
         barView.trackColor = theme.trackColor
-        barView.progressColor = theme.indicatorColor
+        barView.applyProgressAppearance(gradient: theme.progressGradient, solid: theme.indicatorColor)
         textLabel.font = theme.textFont
         textLabel.textColor = theme.foregroundColor
         detailLabel.font = theme.detailFont
@@ -477,6 +518,12 @@ final class HUDView: UIView {
 
     private var effectiveAnimation: Interlude.Animation {
         UIAccessibility.isReduceMotionEnabled ? .none : theme.animation
+    }
+
+    private func applySpinnerScale() {
+        activityIndicator.transform = UIAccessibility.isReduceMotionEnabled
+            ? .identity
+            : CGAffineTransform(scaleX: Constants.spinnerScale, y: Constants.spinnerScale)
     }
 
     // MARK: 模式渲染

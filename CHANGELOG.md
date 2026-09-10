@@ -6,6 +6,18 @@ All notable changes to this project are documented here. The format follows
 
 ## [Unreleased]
 
+### Added
+
+- `Theme.progressGradient`: two or more colours draw a conic gradient on the ring and an axial
+  gradient on the bar; fewer colours keep a solid `indicatorColor`. Presets use
+  `[indicatorColor, infoColor]`.
+
+### Changed
+
+- HUD defaults are larger: `indicatorSize` 52, `ringLineWidth` 5, `minimumSize` 96×96. Loading uses
+  a `.large` spinner (1.25× unless Reduce Motion); result SF Symbols are semibold. Ring percentage
+  stays fully visible inside the stroke.
+
 ## [1.1.0] - 2026-09-10
 
 ### Added

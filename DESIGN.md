@@ -378,6 +378,8 @@ public final class Token: Sendable {
 **行为**
 
 - 百分比按当前 Locale 格式化（`NumberFormatter.percent`，0 位小数）。
+- 圆环中心百分比完整可见：字号约 13pt（Dynamic Type 上限 16），内缩量为 `ringLineWidth`，避免 `100%` 被描边裁切。
+- 进度圆环 / 进度条：`progressGradient` 含至少两色时分别绘制圆锥 / 轴向渐变；否则使用 `indicatorColor` 实心。
 - 进度变化使用 0.15 s `strokeEnd` / 宽度动画，Reduce Motion 关闭动画。
 - `.custom` 视图尺寸取其 `intrinsicContentSize`，无内在尺寸时使用主题 `indicatorSize`。
 - `detail` 使用次要颜色与更小字体，nil / 空串隐藏。
@@ -389,6 +391,7 @@ public final class Token: Sendable {
 - AC-05-3 `text` HUD 到 `textDuration` 后自动隐藏。
 - AC-05-4 `custom` 视图被添加为面板子视图且居中。
 - AC-05-5 `update(detail:)` 后面板 `renderedDetail` 更新；传空串后隐藏。
+- AC-05-6 默认 52pt 圆环在 `progress == 1` 时中心 `100%` 完整落在描边内侧。
 
 ### 4.6 结果与 Haptics
 
@@ -481,6 +484,9 @@ func onTimeout(_ handler: @escaping @MainActor () -> Void) -> Token
 - 主题修改后，已显示面板在下一次渲染时应用（不强制重绘）。
 - `.automatic` 使用动态颜色，随 Light / Dark 模式切换。
 - Reduce Transparency 开启时，`.blur` 背景降级为 `reduceTransparencyColor` 纯色。
+- `progressGradient` 至少两色时，圆环用圆锥渐变、进度条用轴向渐变；不足两色时回退 `indicatorColor`。
+- 预设 `.dark` / `.light` / `.automatic` 的 `progressGradient` 为 `[indicatorColor, infoColor]`。
+- 加载指示器使用 `.large` 系统菊花，非 Reduce Motion 时额外放大 1.25×；结果 SF Symbol 字重 `.semibold`，点大小为 `indicatorSize * 0.9`。
 
 **Theme 字段**
 
@@ -500,13 +506,14 @@ func onTimeout(_ handler: @escaping @MainActor () -> Void) -> Token
 | `buttonFont` | `UIFont` | `.preferredFont(.subheadline, weight: .semibold)` |
 | `contentInsets` | `NSDirectionalEdgeInsets` | `(16, 20, 16, 20)` |
 | `spacing` | `CGFloat` | 10 |
-| `indicatorSize` | `CGFloat` | 36 |
-| `ringLineWidth` | `CGFloat` | 3 |
-| `minimumSize` | `CGSize` | `72 × 72` |
+| `indicatorSize` | `CGFloat` | 52 |
+| `ringLineWidth` | `CGFloat` | 5 |
+| `minimumSize` | `CGSize` | `96 × 96` |
 | `maximumWidth` | `CGFloat` | 260 |
 | `offset` | `UIOffset` | `.zero` |
 | `animation` | `Animation` | `.fade` |
 | `animationDuration` | `TimeInterval` | 0.15 |
+| `progressGradient` | `[UIColor]` | `[indicatorColor, infoColor]`（预设）；自定义 `Theme()` 为空数组 |
 | `toast` | `Theme.Toast` | 见下 |
 
 `Theme.Toast` 字段：`background`（`.solid(black 80%)`）、`foregroundColor`、`secondaryForegroundColor`、`cornerRadius`（10）、`messageFont`、`titleFont`、`contentInsets`（`(10, 14, 10, 14)`）、`maximumWidthRatio`（0.8）、`edgeInset`（16，距屏幕边缘 / 安全区）、`spacing`（8）、`shadow`（可选 `Shadow` 值类型）、`iconSize`（20）、`actionTintColor`、`animation`（`.automatic`）。
@@ -518,6 +525,9 @@ func onTimeout(_ handler: @escaping @MainActor () -> Void) -> Token
 - AC-10-1 设置 `theme.cornerRadius = 20` 后新面板 `panel.layer.cornerRadius == 20`。
 - AC-10-2 单次 `theme:` 覆盖不影响 `Interlude.theme`。
 - AC-10-3 Reduce Transparency 开启时 `panel.effect == nil`。
+- AC-10-4 默认 `indicatorSize == 52` 且应用到指示器容器约束；单次覆盖后容器边长跟随。
+- AC-10-5 `progressGradient` 至少两色时圆环 / 进度条使用渐变。
+- AC-10-6 `progressGradient` 为空时使用实心 `indicatorColor`。
 
 ### 4.11 动画
 
@@ -808,6 +818,7 @@ static func run<T: Sendable>(
 | AC-05-3 | `test_text_autoHidesAfterDuration` |
 | AC-05-4 | `test_custom_viewEmbeddedInPanel` |
 | AC-05-5 | `test_detail_updateAndHide` |
+| AC-05-6 | `test_ring_fullPercentage_notClipped` |
 | AC-06-1…3 | `test_result_success_rendered` / `test_result_info_rendered` / `test_result_image_rendered` |
 | AC-06-4 | `test_show_result_skipsGraceAndAutoHides` |
 | AC-06-5 | `test_haptics_disabled_notPlayed` |
@@ -816,6 +827,7 @@ static func run<T: Sendable>(
 | AC-08-1…3 | `test_cancel_buttonVisible` / `test_cancel_tapInvokesHandlerAndDismisses` / `test_cancel_forcesBlocking` |
 | AC-09-1…3 | `test_timeout_elapsed_showsError` / `test_timeout_dismissBehavior_hidden` / `test_timeout_dismissedEarly_handlerNotCalled` |
 | AC-10-1…3 | `test_theme_cornerRadiusApplied` / `test_theme_perCallOverride_doesNotMutateGlobal` / `test_theme_reduceTransparency_removesBlur` |
+| AC-10-4…6 | `test_theme_indicatorSize_appliedToContainer` / `test_theme_progressGradient_twoColors_drawsGradient` / `test_theme_progressGradient_empty_usesSolid` |
 | AC-11-1…2 | `test_animation_reduceMotion_immediate` / `test_animation_none_hideCompletesSynchronously` |
 | AC-12-1…3 | `test_a11y_loadingDefaultLabel` / `test_a11y_progressValue` / `test_a11y_blockingIsModal` |
 | AC-13-1…2 | `test_strings_override_appliedToA11y` / `test_localization_allLprojKeysMatch` |

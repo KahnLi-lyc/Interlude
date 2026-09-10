@@ -7,10 +7,15 @@ final class RingProgressView: UIView {
 
     private(set) var progress: Double = 0
 
-    var lineWidth: CGFloat = 3 {
+    var usesGradient: Bool {
+        !gradientLayer.isHidden
+    }
+
+    var lineWidth: CGFloat = 5 {
         didSet {
             trackLayer.lineWidth = lineWidth
             progressLayer.lineWidth = lineWidth
+            updateLabelInsets()
             setNeedsLayout()
         }
     }
@@ -21,10 +26,17 @@ final class RingProgressView: UIView {
 
     var progressColor: UIColor = .white {
         didSet {
-            progressLayer.strokeColor = progressColor.cgColor
+            if !usesGradient {
+                progressLayer.strokeColor = progressColor.cgColor
+            }
             percentageLabel.textColor = progressColor
         }
     }
+
+    // MARK: - Private Properties
+
+    private var storedGradientColors: [UIColor] = []
+    private var labelInsetConstraints: [NSLayoutConstraint] = []
 
     // MARK: - Views
 
@@ -33,6 +45,15 @@ final class RingProgressView: UIView {
         layer.fillColor = UIColor.clear.cgColor
         layer.strokeColor = trackColor.cgColor
         layer.lineWidth = lineWidth
+        return layer
+    }()
+
+    private lazy var gradientLayer: CAGradientLayer = {
+        let layer = CAGradientLayer()
+        layer.type = .conic
+        layer.startPoint = CGPoint(x: 0.5, y: 0.5)
+        layer.endPoint = CGPoint(x: 0.5, y: 0)
+        layer.isHidden = true
         return layer
     }()
 
@@ -48,8 +69,8 @@ final class RingProgressView: UIView {
 
     private lazy var percentageLabel: UILabel = {
         let label = UILabel()
-        let baseFont = UIFont.monospacedDigitSystemFont(ofSize: 9, weight: .semibold)
-        label.font = UIFontMetrics(forTextStyle: .caption2).scaledFont(for: baseFont, maximumPointSize: 11)
+        let baseFont = UIFont.monospacedDigitSystemFont(ofSize: 13, weight: .semibold)
+        label.font = UIFontMetrics(forTextStyle: .caption1).scaledFont(for: baseFont, maximumPointSize: 16)
         label.adjustsFontForContentSizeCategory = true
         label.textColor = progressColor
         label.textAlignment = .center
@@ -86,6 +107,7 @@ final class RingProgressView: UIView {
         )
         trackLayer.frame = bounds
         progressLayer.frame = bounds
+        gradientLayer.frame = bounds
         trackLayer.path = path.cgPath
         progressLayer.path = path.cgPath
     }
@@ -94,7 +116,7 @@ final class RingProgressView: UIView {
         super.traitCollectionDidChange(previousTraitCollection)
         // CGColor 不随动态颜色自动更新，界面风格变化后重新解析。
         trackLayer.strokeColor = trackColor.cgColor
-        progressLayer.strokeColor = progressColor.cgColor
+        applyStrokeColors()
     }
 
     // MARK: - Public Methods
@@ -122,6 +144,37 @@ final class RingProgressView: UIView {
         progressLayer.add(animation, forKey: "strokeEnd")
     }
 
+    /// 双色及以上使用圆锥渐变；否则实心描边。
+    func applyProgressAppearance(gradient: [UIColor], solid: UIColor) {
+        storedGradientColors = gradient
+        progressColor = solid
+        if gradient.count >= 2 {
+            gradientLayer.isHidden = false
+            gradientLayer.colors = gradient.map(\.resolvedCGColor)
+            progressLayer.strokeColor = UIColor.white.cgColor
+            if progressLayer.superlayer !== nil, progressLayer.superlayer !== gradientLayer {
+                progressLayer.removeFromSuperlayer()
+            }
+            gradientLayer.mask = progressLayer
+        } else {
+            gradientLayer.mask = nil
+            gradientLayer.isHidden = true
+            if progressLayer.superlayer !== layer {
+                layer.addSublayer(progressLayer)
+            }
+            progressLayer.strokeColor = solid.cgColor
+        }
+        setNeedsLayout()
+    }
+
+    /// 中心百分比是否落在描边内侧，避免 `100%` 被圆环裁切。
+    func percentageLabelFitsInsideStroke() -> Bool {
+        layoutIfNeeded()
+        let frame = percentageLabel.convert(percentageLabel.bounds, to: self)
+        let inner = bounds.insetBy(dx: lineWidth, dy: lineWidth)
+        return inner.contains(frame)
+    }
+
     // MARK: - View Setup
 
     private func setupViews() {
@@ -129,14 +182,31 @@ final class RingProgressView: UIView {
         isAccessibilityElement = false
         accessibilityElementsHidden = true
         layer.addSublayer(trackLayer)
+        layer.addSublayer(gradientLayer)
         layer.addSublayer(progressLayer)
 
         addSubview(percentageLabel)
         percentageLabel.translatesAutoresizingMaskIntoConstraints = false
-        NSLayoutConstraint.activate([
-            percentageLabel.leadingAnchor.constraint(equalTo: leadingAnchor, constant: 4),
-            percentageLabel.trailingAnchor.constraint(equalTo: trailingAnchor, constant: -4),
+        updateLabelInsets()
+    }
+
+    private func updateLabelInsets() {
+        NSLayoutConstraint.deactivate(labelInsetConstraints)
+        let inset = lineWidth
+        labelInsetConstraints = [
+            percentageLabel.leadingAnchor.constraint(equalTo: leadingAnchor, constant: inset),
+            percentageLabel.trailingAnchor.constraint(equalTo: trailingAnchor, constant: -inset),
             percentageLabel.centerYAnchor.constraint(equalTo: centerYAnchor)
-        ])
+        ]
+        NSLayoutConstraint.activate(labelInsetConstraints)
+    }
+
+    private func applyStrokeColors() {
+        if usesGradient {
+            gradientLayer.colors = storedGradientColors.map(\.resolvedCGColor)
+            progressLayer.strokeColor = UIColor.white.cgColor
+        } else {
+            progressLayer.strokeColor = progressColor.cgColor
+        }
     }
 }

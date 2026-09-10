@@ -6,7 +6,7 @@ final class BarProgressView: UIView {
     // MARK: - Types
 
     private enum Constants {
-        static let barHeight: CGFloat = 6
+        static let barHeight: CGFloat = 8
         static let barWidth: CGFloat = 140
         static let spacing: CGFloat = 8
         static let percentageWidth: CGFloat = 40
@@ -16,13 +16,19 @@ final class BarProgressView: UIView {
 
     private(set) var progress: Double = 0
 
+    var usesGradient: Bool {
+        fillGradient.superlayer != nil
+    }
+
     var trackColor: UIColor = .white.withAlphaComponent(0.25) {
         didSet { trackView.backgroundColor = trackColor }
     }
 
     var progressColor: UIColor = .white {
         didSet {
-            fillView.backgroundColor = progressColor
+            if !usesGradient {
+                fillView.backgroundColor = progressColor
+            }
             percentageLabel.textColor = progressColor
         }
     }
@@ -37,6 +43,7 @@ final class BarProgressView: UIView {
     // MARK: - Private Properties
 
     private var fillWidthConstraint: NSLayoutConstraint?
+    private var storedGradientColors: [UIColor] = []
 
     // MARK: - Views
 
@@ -53,8 +60,16 @@ final class BarProgressView: UIView {
         let view = UIView()
         view.backgroundColor = progressColor
         view.layer.cornerRadius = Constants.barHeight / 2
+        view.clipsToBounds = true
         view.isAccessibilityElement = false
         return view
+    }()
+
+    private lazy var fillGradient: CAGradientLayer = {
+        let layer = CAGradientLayer()
+        layer.startPoint = CGPoint(x: 0, y: 0.5)
+        layer.endPoint = CGPoint(x: 1, y: 0.5)
+        return layer
     }()
 
     private lazy var percentageLabel: UILabel = {
@@ -80,6 +95,21 @@ final class BarProgressView: UIView {
         fatalError("init(coder:) is not supported")
     }
 
+    // MARK: - Lifecycle
+
+    override func layoutSubviews() {
+        super.layoutSubviews()
+        fillGradient.frame = fillView.bounds
+        fillGradient.cornerRadius = Constants.barHeight / 2
+    }
+
+    override func traitCollectionDidChange(_ previousTraitCollection: UITraitCollection?) {
+        super.traitCollectionDidChange(previousTraitCollection)
+        if usesGradient {
+            fillGradient.colors = storedGradientColors.map(\.resolvedCGColor)
+        }
+    }
+
     // MARK: - Public Methods
 
     func setProgress(_ progress: Double, percentageText: String?, animated: Bool) {
@@ -95,6 +125,23 @@ final class BarProgressView: UIView {
         UIView.animate(withDuration: 0.15, delay: 0, options: [.curveEaseInOut, .beginFromCurrentState]) {
             self.trackView.layoutIfNeeded()
         }
+    }
+
+    /// 双色及以上沿填充方向渐变；否则实心填充。
+    func applyProgressAppearance(gradient: [UIColor], solid: UIColor) {
+        storedGradientColors = gradient
+        progressColor = solid
+        if gradient.count >= 2 {
+            fillView.backgroundColor = .clear
+            fillGradient.colors = gradient.map(\.resolvedCGColor)
+            if fillGradient.superlayer !== fillView.layer {
+                fillView.layer.insertSublayer(fillGradient, at: 0)
+            }
+        } else {
+            fillGradient.removeFromSuperlayer()
+            fillView.backgroundColor = solid
+        }
+        setNeedsLayout()
     }
 
     // MARK: - View Setup

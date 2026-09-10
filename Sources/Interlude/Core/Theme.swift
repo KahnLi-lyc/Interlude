@@ -93,13 +93,20 @@ public extension Interlude {
         public var buttonFont: UIFont = .preferredFont(forTextStyle: .subheadline).withWeight(.semibold)
         public var contentInsets = NSDirectionalEdgeInsets(top: 16, leading: 20, bottom: 16, trailing: 20)
         public var spacing: CGFloat = 10
-        public var indicatorSize: CGFloat = 36
-        public var ringLineWidth: CGFloat = 3
-        public var minimumSize = CGSize(width: 72, height: 72)
+        public var indicatorSize: CGFloat = 52
+        public var ringLineWidth: CGFloat = 5
+        public var minimumSize = CGSize(width: 96, height: 96)
         public var maximumWidth: CGFloat = 260
         public var offset: UIOffset = .zero
         public var animation: Animation = .fade
         public var animationDuration: TimeInterval = 0.15
+        /// At least two colours draw a gradient on ring and bar progress; fewer uses ``indicatorColor``.
+        public var progressGradient: [UIColor] = []
+
+        var usesProgressGradient: Bool {
+            progressGradient.count >= 2
+        }
+
         public var toast = Toast()
 
         // MARK: - Initialization
@@ -126,15 +133,19 @@ public extension Interlude {
         // MARK: - Presets
 
         /// Dark panel with light content. Works on any background.
-        public static let dark = Theme(
-            background: .blur(.systemChromeMaterialDark),
-            reduceTransparencyColor: UIColor(white: 0.08, alpha: 0.96),
-            dimmingColor: UIColor.black.withAlphaComponent(0.12),
-            foregroundColor: .white,
-            secondaryForegroundColor: UIColor.white.withAlphaComponent(0.7),
-            indicatorColor: .white,
-            trackColor: UIColor.white.withAlphaComponent(0.25)
-        )
+        public static let dark: Theme = {
+            var theme = Theme(
+                background: .blur(.systemChromeMaterialDark),
+                reduceTransparencyColor: UIColor(white: 0.08, alpha: 0.96),
+                dimmingColor: UIColor.black.withAlphaComponent(0.12),
+                foregroundColor: .white,
+                secondaryForegroundColor: UIColor.white.withAlphaComponent(0.7),
+                indicatorColor: .white,
+                trackColor: UIColor.white.withAlphaComponent(0.25)
+            )
+            theme.progressGradient = [theme.indicatorColor, theme.infoColor]
+            return theme
+        }()
 
         /// Light panel with dark content.
         public static let light: Theme = {
@@ -147,6 +158,7 @@ public extension Interlude {
                 indicatorColor: UIColor(white: 0.1, alpha: 1),
                 trackColor: UIColor(white: 0.1, alpha: 0.15)
             )
+            theme.progressGradient = [theme.indicatorColor, theme.infoColor]
             theme.toast.background = .solid(UIColor(white: 0.97, alpha: 0.98))
             theme.toast.reduceTransparencyColor = UIColor(white: 0.97, alpha: 1)
             theme.toast.foregroundColor = UIColor(white: 0.1, alpha: 1)
@@ -174,6 +186,7 @@ public extension Interlude {
                     dark: UIColor.white.withAlphaComponent(0.25)
                 )
             )
+            theme.progressGradient = [theme.indicatorColor, theme.infoColor]
             theme.toast.background = .blur(.systemChromeMaterial)
             theme.toast.reduceTransparencyColor = UIColor.dynamic(
                 light: UIColor(white: 0.97, alpha: 1),
@@ -194,6 +207,11 @@ extension UIColor {
         UIColor { traits in
             traits.userInterfaceStyle == .dark ? dark : light
         }
+    }
+
+    /// 解析当前 trait 下的 `CGColor`，供图层使用。
+    var resolvedCGColor: CGColor {
+        resolvedColor(with: UITraitCollection.current).cgColor
     }
 }
 

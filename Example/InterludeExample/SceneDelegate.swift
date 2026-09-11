@@ -34,6 +34,14 @@ final class SceneDelegate: UIResponder, UIWindowSceneDelegate {
         guard let index = arguments.firstIndex(of: "--autoplay"), arguments.indices.contains(index + 1) else { return }
         let scenario = arguments[index + 1]
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.6) {
+            if scenario == "glass" {
+                var theme = Interlude.Theme.automatic
+                if #available(iOS 26.0, *) {
+                    theme.background = .glass(style: .clear, tintColor: nil, interactive: true)
+                    theme.toast.background = .glass(style: .clear, tintColor: nil, interactive: true)
+                }
+                Interlude.theme = theme
+            }
             if scenario.hasPrefix("toast") {
                 Self.playToastScenario(scenario)
             } else {
@@ -46,6 +54,8 @@ final class SceneDelegate: UIResponder, UIWindowSceneDelegate {
         switch scenario {
         case "loading":
             Interlude.loading("Saving…")
+        case "glass":
+            Interlude.loading("Clear glass")
         case "progress":
             Interlude.progress(0.64, text: "Uploading", detail: "64 / 100")
         case "ring-full":

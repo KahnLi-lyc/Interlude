@@ -323,10 +323,10 @@ final class DemoListViewController: UITableViewController {
             UIAction(title: "Automatic") { _ in Interlude.theme = .automatic },
             UIAction(title: "Dark") { _ in Interlude.theme = .dark },
             UIAction(title: "Glass (iOS 26+)") { _ in
-                var theme = Interlude.Theme.dark
+                var theme = Interlude.Theme.automatic
                 if #available(iOS 26.0, *) {
-                    theme.background = .glass(style: .regular, tintColor: .systemIndigo, interactive: true)
-                    theme.toast.background = .glass(style: .regular, tintColor: .systemIndigo, interactive: true)
+                    theme.background = .glass(style: .clear, tintColor: nil, interactive: true)
+                    theme.toast.background = .glass(style: .clear, tintColor: nil, interactive: true)
                 }
                 Interlude.theme = theme
             },

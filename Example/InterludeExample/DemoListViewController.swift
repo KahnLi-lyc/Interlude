@@ -322,6 +322,14 @@ final class DemoListViewController: UITableViewController {
         UIMenu(children: [
             UIAction(title: "Automatic") { _ in Interlude.theme = .automatic },
             UIAction(title: "Dark") { _ in Interlude.theme = .dark },
+            UIAction(title: "Glass (iOS 26+)") { _ in
+                var theme = Interlude.Theme.dark
+                if #available(iOS 26.0, *) {
+                    theme.background = .glass(style: .regular, tintColor: .systemIndigo, interactive: true)
+                    theme.toast.background = .glass(style: .regular, tintColor: .systemIndigo, interactive: true)
+                }
+                Interlude.theme = theme
+            },
             UIAction(title: "Light") { _ in Interlude.theme = .light },
             UIAction(title: "Brand (solid, zoom)") { _ in
                 var theme = Interlude.Theme.dark

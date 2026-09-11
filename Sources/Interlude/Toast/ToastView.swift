@@ -277,6 +277,17 @@ final class ToastView: UIView {
             return
         }
         switch theme.toast.background {
+        case let .glass(style, tintColor, interactive):
+            if #available(iOS 26.0, *) {
+                let glass = UIGlassEffect(style: style == .regular ? .regular : .clear)
+                glass.tintColor = tintColor
+                glass.isInteractive = interactive
+                effectView.backgroundColor = .clear
+                effectView.effect = glass
+            } else {
+                effectView.backgroundColor = .clear
+                effectView.effect = UIBlurEffect(style: .systemChromeMaterial)
+            }
         case let .blur(style):
             effectView.backgroundColor = .clear
             effectView.effect = UIBlurEffect(style: style)

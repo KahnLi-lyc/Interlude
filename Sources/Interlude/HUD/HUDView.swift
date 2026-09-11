@@ -512,6 +512,17 @@ final class HUDView: UIView {
             return
         }
         switch theme.background {
+        case let .glass(style, tintColor, interactive):
+            if #available(iOS 26.0, *) {
+                let glass = UIGlassEffect(style: style == .regular ? .regular : .clear)
+                glass.tintColor = tintColor
+                glass.isInteractive = interactive
+                panel.backgroundColor = .clear
+                panel.effect = glass
+            } else {
+                panel.backgroundColor = .clear
+                panel.effect = UIBlurEffect(style: .systemChromeMaterial)
+            }
         case let .blur(style):
             panel.backgroundColor = .clear
             panel.effect = UIBlurEffect(style: style)

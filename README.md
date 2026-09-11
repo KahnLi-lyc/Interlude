@@ -195,6 +195,17 @@ Interlude.loading("Paying", theme: .light)
 
 Presets: `.automatic` (follows system appearance), `.dark`, `.light`.
 
+On iOS 26 and later, use `Theme.Background.glass` to opt into UIKit Liquid Glass. On older systems it falls back to the regular material:
+
+```swift
+if #available(iOS 26.0, *) {
+    var theme = Interlude.Theme.dark
+    theme.background = .glass(style: .regular, tintColor: .systemIndigo, interactive: true)
+    theme.toast.background = .glass(style: .regular, tintColor: .systemIndigo, interactive: true)
+    Interlude.theme = theme
+}
+```
+
 ## Migrating
 
 | From | To |

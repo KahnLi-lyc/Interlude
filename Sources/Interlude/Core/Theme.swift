@@ -23,6 +23,12 @@ public extension Interlude {
     struct Theme: Sendable {
         // MARK: - Types
 
+        /// Liquid Glass style available on iOS 26 and later.
+        public enum GlassStyle: Sendable {
+            case regular
+            case clear
+        }
+
         /// Panel background material.
         public enum Background: Sendable {
             /// A `UIVisualEffectView` blur.
@@ -30,6 +36,9 @@ public extension Interlude {
 
             /// A solid colour.
             case solid(UIColor)
+
+            /// The iOS 26 Liquid Glass material. Older systems fall back to the regular material.
+            case glass(style: GlassStyle = .regular, tintColor: UIColor? = nil, interactive: Bool = false)
         }
 
         /// Optional drop shadow.

@@ -213,7 +213,8 @@ DetailView()
 | `Interlude.Configuration.Toast` | `struct, Sendable` | Toast 默认位置 / 时长 / 策略 / 手势 / 键盘避让 |
 | `Interlude.Strings` | `struct, Sendable` | 可覆盖的内置文案 |
 | `Interlude.Theme` | `struct, Sendable` | 全部视觉参数，预置 `.dark / .light / .automatic` |
-| `Interlude.Theme.Background` | `enum` | `.blur(UIBlurEffect.Style)` / `.solid(UIColor)` |
+| `Interlude.Theme.GlassStyle` | `enum, Sendable` | iOS 26 Liquid Glass 风格：`.regular / .clear` |
+| `Interlude.Theme.Background` | `enum` | `.blur(UIBlurEffect.Style)` / `.solid(UIColor)` / `.glass(...)` (iOS 26+) |
 | `Interlude.Theme.Toast` | `struct` | Toast 视觉参数 |
 | `Interlude.Animation` | `enum` | `.fade / .zoom / .zoomIn / .zoomOut / .none` |
 | `Interlude.Interaction` | `enum` | `.blocking / .passthrough` |
@@ -524,7 +525,7 @@ func onTimeout(_ handler: @escaping @MainActor () -> Void) -> Token
 
 `Theme.Toast` 字段：`background`（`.solid(black 80%)`）、`foregroundColor`、`secondaryForegroundColor`、`cornerRadius`（10）、`messageFont`、`titleFont`、`contentInsets`（`(10, 14, 10, 14)`）、`maximumWidthRatio`（0.8）、`edgeInset`（16，距屏幕边缘 / 安全区）、`spacing`（8）、`shadow`（可选 `Shadow` 值类型）、`iconSize`（20）、`actionTintColor`、`animation`（`.automatic`）。
 
-`.light` 为反色版本：`.blur(.systemChromeMaterialLight)`、深色前景。`.automatic` 各字段使用 `UIColor { traits in … }` 动态色，背景 `.blur(.systemChromeMaterial)`。
+`.light` 为反色版本：`.blur(.systemChromeMaterialLight)`、深色前景。`.automatic` 各字段使用 `UIColor { traits in … }` 动态色，背景 `.blur(.systemChromeMaterial)`。`.glass` 在 iOS 26+ 使用 `UIGlassEffect`，iOS 15–25 回退为 `.blur(.systemChromeMaterial)`；Reduce Transparency 始终回退纯色。
 
 **验收标准**
 

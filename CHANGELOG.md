@@ -13,6 +13,10 @@ All notable changes to this project are documented here. The format follows
 ### Fixed
 
 - Gradient rings no longer sample the terminal colour across the conic seam at the rounded start cap.
+- Bar progress no longer breaks the percentage-label constraint: the default panel is 272pt wide, and
+  the 168pt track shrinks before the percentage label when a local host has less horizontal space.
+- The Example keyboard-avoidance field disables autocorrection to avoid an iOS 27 prediction-cell
+  constraint warning while preserving the software-keyboard scenario.
 
 ## [1.2.0] - 2026-09-10
 

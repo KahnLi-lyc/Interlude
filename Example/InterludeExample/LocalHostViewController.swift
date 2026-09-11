@@ -126,6 +126,7 @@ final class KeyboardViewController: UIViewController {
         let field = UITextField()
         field.placeholder = "Tap here, then show a toast"
         field.borderStyle = .roundedRect
+        field.autocorrectionType = .no
         return field
     }()
 

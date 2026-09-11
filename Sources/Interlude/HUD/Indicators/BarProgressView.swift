@@ -10,6 +10,7 @@ final class BarProgressView: UIView {
         static let barWidth: CGFloat = 168
         static let spacing: CGFloat = 8
         static let percentageWidth: CGFloat = 48
+        static let percentagePriority = UILayoutPriority(999)
     }
 
     // MARK: - Public Properties
@@ -79,6 +80,7 @@ final class BarProgressView: UIView {
         label.adjustsFontForContentSizeCategory = true
         label.textColor = progressColor
         label.textAlignment = .right
+        label.setContentCompressionResistancePriority(Constants.percentagePriority, for: .horizontal)
         label.isAccessibilityElement = false
         return label
     }()
@@ -99,6 +101,8 @@ final class BarProgressView: UIView {
 
     override func layoutSubviews() {
         super.layoutSubviews()
+        updateFillWidth()
+        trackView.layoutIfNeeded()
         fillGradient.frame = fillView.bounds
         fillGradient.cornerRadius = Constants.barHeight / 2
     }
@@ -114,16 +118,20 @@ final class BarProgressView: UIView {
 
     func setProgress(_ progress: Double, percentageText: String?, animated: Bool) {
         let value = HUDMode.clampProgress(progress)
-        self.progress = value
         percentageLabel.text = percentageText
-        fillWidthConstraint?.constant = Constants.barWidth * CGFloat(value)
+        setNeedsLayout()
+        layoutIfNeeded()
+        self.progress = value
+        updateFillWidth()
 
         guard animated else {
             trackView.layoutIfNeeded()
+            fillGradient.frame = fillView.bounds
             return
         }
         UIView.animate(withDuration: 0.15, delay: 0, options: [.curveEaseInOut, .beginFromCurrentState]) {
             self.trackView.layoutIfNeeded()
+            self.fillGradient.frame = self.fillView.bounds
         }
     }
 
@@ -144,6 +152,23 @@ final class BarProgressView: UIView {
         setNeedsLayout()
     }
 
+    /// 百分比标签是否获得了完整的内在宽度，供布局验收使用。
+    func percentageLabelFits() -> Bool {
+        layoutIfNeeded()
+        return percentageLabel.bounds.width + 0.5 >= percentageLabel.intrinsicContentSize.width
+    }
+
+    /// 实际布局尺寸，避免测试只验证约束常量。
+    var laidOutTrackWidth: CGFloat {
+        layoutIfNeeded()
+        return trackView.bounds.width
+    }
+
+    var laidOutFillWidth: CGFloat {
+        layoutIfNeeded()
+        return fillView.bounds.width
+    }
+
     // MARK: - View Setup
 
     private func setupViews() {
@@ -160,11 +185,17 @@ final class BarProgressView: UIView {
 
         let fillWidth = fillView.widthAnchor.constraint(equalToConstant: 0)
         fillWidthConstraint = fillWidth
+        let preferredTrackWidth = trackView.widthAnchor.constraint(equalToConstant: Constants.barWidth)
+        preferredTrackWidth.priority = .defaultHigh
+        let percentageMinimumWidth = percentageLabel.widthAnchor.constraint(
+            greaterThanOrEqualToConstant: Constants.percentageWidth
+        )
+        percentageMinimumWidth.priority = Constants.percentagePriority
 
         NSLayoutConstraint.activate([
             trackView.leadingAnchor.constraint(equalTo: leadingAnchor),
             trackView.centerYAnchor.constraint(equalTo: centerYAnchor),
-            trackView.widthAnchor.constraint(equalToConstant: Constants.barWidth),
+            preferredTrackWidth,
             trackView.heightAnchor.constraint(equalToConstant: Constants.barHeight),
 
             fillView.leadingAnchor.constraint(equalTo: trackView.leadingAnchor),
@@ -175,7 +206,13 @@ final class BarProgressView: UIView {
             percentageLabel.leadingAnchor.constraint(equalTo: trackView.trailingAnchor, constant: Constants.spacing),
             percentageLabel.trailingAnchor.constraint(equalTo: trailingAnchor),
             percentageLabel.centerYAnchor.constraint(equalTo: centerYAnchor),
-            percentageLabel.widthAnchor.constraint(greaterThanOrEqualToConstant: Constants.percentageWidth)
+            percentageMinimumWidth
         ])
+    }
+
+    // MARK: - Private Methods
+
+    private func updateFillWidth() {
+        fillWidthConstraint?.constant = trackView.bounds.width * CGFloat(progress)
     }
 }

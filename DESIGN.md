@@ -380,6 +380,7 @@ public final class Token: Sendable {
 
 - 百分比按当前 Locale 格式化（`NumberFormatter.percent`，0 位小数）。
 - 圆环中心百分比完整可见：字号约 15pt（Dynamic Type 上限 18），标签左右内缩 `2 × ringLineWidth`，文字矩形四角落在描边内圆里。
+- 水平轨道首选宽度为 168pt；宿主宽度不足时优先缩短轨道，百分比标签保持完整，填充宽度始终按实际轨道宽度计算。
 - 进度填充：`ProgressFill.solid`（默认）使用 `indicatorColor`；`.gradient` 使用 `progressGradient`（≥2 色）或不透明同色系兜底 `[.systemCyan, infoColor]`。`Interlude.progress(..., fill:)` 可按次覆盖。
 - 圆环渐变随进度铺展：色带落在 `[0, progress]`，末色重复到整圈；`progress == 1` 时整环收成末色，12 点方向不出现色缝。
 - 进度变化使用 0.15 s `strokeEnd` / 宽度动画，Reduce Motion 关闭动画。
@@ -394,6 +395,7 @@ public final class Token: Sendable {
 - AC-05-4 `custom` 视图被添加为面板子视图且居中。
 - AC-05-5 `update(detail:)` 后面板 `renderedDetail` 更新；传空串后隐藏。
 - AC-05-6 默认 80pt 圆环真实布局为 80 × 80，`progress == 1` 时中心 `100%` 四角全部落在描边内圆里。
+- AC-05-7 默认 bar 轨道为 168pt 且 `100%` 完整可见；300pt 局部宿主中轨道自适应缩短，填充仍与实际轨道等宽。
 
 ### 4.6 结果与 Haptics
 
@@ -512,7 +514,7 @@ func onTimeout(_ handler: @escaping @MainActor () -> Void) -> Token
 | `indicatorSize` | `CGFloat` | 80 |
 | `ringLineWidth` | `CGFloat` | 8 |
 | `minimumSize` | `CGSize` | `128 × 128` |
-| `maximumWidth` | `CGFloat` | 260 |
+| `maximumWidth` | `CGFloat` | 272 |
 | `offset` | `UIOffset` | `.zero` |
 | `animation` | `Animation` | `.fade` |
 | `animationDuration` | `TimeInterval` | 0.15 |
@@ -823,6 +825,7 @@ static func run<T: Sendable>(
 | AC-05-4 | `test_custom_viewEmbeddedInPanel` |
 | AC-05-5 | `test_detail_updateAndHide` |
 | AC-05-6 | `test_ring_fullPercentage_notClipped` |
+| AC-05-7 | `test_barLayout_defaultHost_preservesPreferredWidthAndPercentage` / `test_barLayout_narrowLocalHost_shrinksTrackWithoutClippingPercentage` |
 | AC-06-1…3 | `test_result_success_rendered` / `test_result_info_rendered` / `test_result_image_rendered` |
 | AC-06-4 | `test_show_result_skipsGraceAndAutoHides` |
 | AC-06-5 | `test_haptics_disabled_notPlayed` |

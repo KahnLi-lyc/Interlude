@@ -120,6 +120,42 @@ final class HUDFeatureTests: InterludeTestCase {
         XCTAssertEqual(globalOverlay?.renderedMode, .hidden, "Token 结束后观察必须停止")
     }
 
+    func test_barLayout_defaultHost_preservesPreferredWidthAndPercentage() async {
+        let progress = Progress(totalUnitCount: 50)
+        progress.completedUnitCount = 50
+        Interlude.progress(progress, style: .bar, text: "Downloading").onCancel {}
+        await clock.advance(by: 0.2)
+        window.layoutIfNeeded()
+
+        let overlay = try? XCTUnwrap(globalOverlay)
+        XCTAssertEqual(Interlude.Theme.dark.maximumWidth, 272)
+        XCTAssertEqual(overlay?.laidOutPanelWidth ?? 0, 272, accuracy: 0.5)
+        XCTAssertEqual(overlay?.laidOutBarTrackWidth ?? 0, 168, accuracy: 0.5)
+        XCTAssertEqual(overlay?.laidOutBarFillWidth ?? 0, 168, accuracy: 0.5)
+        XCTAssertEqual(overlay?.barPercentageLabelFits, true)
+        XCTAssertEqual(overlay?.hasAmbiguousLayout, false)
+    }
+
+    func test_barLayout_narrowLocalHost_shrinksTrackWithoutClippingPercentage() async {
+        let localHost = makeLocalHost()
+        let progress = Progress(totalUnitCount: 50)
+        progress.completedUnitCount = 50
+        Interlude.progress(progress, style: .bar, text: "Downloading", on: localHost).onCancel {}
+        await clock.advance(by: 0.2)
+        window.layoutIfNeeded()
+
+        let overlay = try? XCTUnwrap(overlay(on: localHost))
+        XCTAssertLessThanOrEqual(overlay?.laidOutPanelWidth ?? .greatestFiniteMagnitude, 236.5)
+        XCTAssertLessThan(overlay?.laidOutBarTrackWidth ?? .greatestFiniteMagnitude, 168)
+        XCTAssertEqual(
+            overlay?.laidOutBarFillWidth ?? 0,
+            overlay?.laidOutBarTrackWidth ?? 1,
+            accuracy: 0.5
+        )
+        XCTAssertEqual(overlay?.barPercentageLabelFits, true)
+        XCTAssertEqual(overlay?.hasAmbiguousLayout, false)
+    }
+
     // MARK: - Local hosts
 
     func testLocalHostIsIndependentFromGlobal() async {

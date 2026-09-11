@@ -829,6 +829,11 @@ final class HUDView: UIView {
 // MARK: - 验收只读属性
 
 extension HUDView {
+    var laidOutPanelWidth: CGFloat {
+        layoutIfNeeded()
+        return panel.bounds.width
+    }
+
     /// 指示器容器当前约束边长，供主题验收使用。
     var indicatorSizeConstant: CGFloat {
         indicatorWidthConstraint?.constant ?? theme.indicatorSize
@@ -846,6 +851,18 @@ extension HUDView {
 
     var barUsesGradient: Bool {
         barView.usesGradient
+    }
+
+    var laidOutBarTrackWidth: CGFloat {
+        barView.laidOutTrackWidth
+    }
+
+    var laidOutBarFillWidth: CGFloat {
+        barView.laidOutFillWidth
+    }
+
+    var barPercentageLabelFits: Bool {
+        barView.percentageLabelFits()
     }
 
     var ringPercentageLabelFitsInsideStroke: Bool {

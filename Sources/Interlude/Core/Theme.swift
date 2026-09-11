@@ -96,7 +96,7 @@ public extension Interlude {
         public var indicatorSize: CGFloat = 80
         public var ringLineWidth: CGFloat = 8
         public var minimumSize = CGSize(width: 128, height: 128)
-        public var maximumWidth: CGFloat = 260
+        public var maximumWidth: CGFloat = 272
         public var offset: UIOffset = .zero
         public var animation: Animation = .fade
         public var animationDuration: TimeInterval = 0.15
